@@ -1,0 +1,67 @@
+#Zero configuration specific to the hand in Advanced Robotics Lab @ QMUL.
+#The YAML file used by the Allegro Hand Node is named "zero.yaml"
+
+hand_info:
+ control_period_s: 0.003
+ DOF: 16
+# which_hand: 'right'
+ robot_name: 'Allegro Hand'
+ manufacturer: 'SimLab Co. Ltd.'
+ origin: 'Seoul, South Korea'
+ serial: 'SAH030D041L'
+ version: 3.0
+
+zero:
+ encoder_offset:
+  j00: 3981
+  j01: -4463
+  j02: 4798
+  j03: 4874
+  j10: 6188
+  j11: -3798
+  j12: 3458
+  j13: 2112
+  j20: 3934
+  j21: -3222
+  j22: 4383
+  j23: 6110
+  j30: -3358
+  j31: 3564
+  j32: -2985
+  j33: -4282
+
+ encoder_direction:
+  j00: +1
+  j01: +1
+  j02: +1
+  j03: +1
+  j10: +1
+  j11: +1
+  j12: +1
+  j13: +1
+  j20: +1
+  j21: +1
+  j22: +1
+  j23: +1
+  j30: +1
+  j31: +1
+  j32: +1
+  j33: +1
+
+ motor_direction:
+  j00: +1
+  j01: +1
+  j02: +1
+  j03: +1
+  j10: +1
+  j11: +1
+  j12: +1
+  j13: +1
+  j20: +1
+  j21: +1
+  j22: +1
+  j23: +1
+  j30: +1
+  j31: +1
+  j32: +1
+  j33: +1
