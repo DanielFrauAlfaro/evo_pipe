@@ -1,0 +1,4 @@
+-------- Errores --------
+
+Puntos desalineados --> No cumplen las restricciones especificadas en los parámetros
+Puntos encima del objeto --> Puede deberse a que la nube es parcial

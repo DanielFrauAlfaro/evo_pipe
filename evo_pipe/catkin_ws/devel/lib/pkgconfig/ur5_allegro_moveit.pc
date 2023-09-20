@@ -1,0 +1,8 @@
+prefix=/daniel/Desktop/evo_pipe/catkin_ws/devel
+
+Name: ur5_allegro_moveit
+Description: Description of ur5_allegro_moveit
+Version: 0.3.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: roscpp

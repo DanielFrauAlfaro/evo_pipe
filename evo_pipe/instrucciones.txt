@@ -1,0 +1,81 @@
+##### RealSense ######
+roslaunch realsense2_camera rs_camera.launch initial_reset:=true	(alomejor el initiar_reset no hace falta)
+roslaunch realsense2_camera rs_camera_mine.launch initial_reset:=true
+
+realsense-viewer
+
+
+# 2F-140 Gripper (http://wiki.ros.org/robotiq/Tutorials/Control%20of%20a%202-Finger%20Gripper%20using%20the%20Modbus%20RTU%20protocol%20%28ros%20kinetic%20and%20newer%20releases%29)
+
+	source devel/setup.bash
+	roscore
+
+	source devel/setup.bash
+	rosrun robotiq_2f_gripper_control Robotiq2FGripperRtuNode.py /dev/ttyUSB0
+
+	source devel/setup.bash
+	rosrun robotiq_2f_gripper_control Robotiq2FGripperSimpleController.py /dev/ttyUSB0
+		r
+		a (poner esponja)
+		...
+
+# 3F Gripper (http://wiki.ros.org/robotiq/Tutorials/Control%20of%20a%203-Finger%20Gripper%20using%20the%20Modbus%20TCP%20Protocol)
+
+	Encender el brazo
+	vncviewer 172.18.34.20X
+	Iniciar y soltar los frenos. Las luces de la pinza parpadearan
+
+	¿source devel/setup.bash
+	roscore?
+
+	source devel/setup.bash
+	rosrun robotiq_3f_gripper_control Robotiq3FGripperTcpNode.py 172.18.34.220
+
+	source devel/setup.bash
+	rosrun robotiq_3f_gripper_control Robotiq3FGripperSimpleController.py
+		r
+		a (poner esponja)
+.		..
+
+	Salir CTRL+D
+	
+	
+####### Pinza de 4 dedos ########
+
+WEB: https://github.com/gokhansolak/allegro-hand-ros.git
+Izq: SAH030D041L -- v3.0
+Dcha: no funciona -- v2.0
+
+/allegroHand_0/joint_cmd      --> Mensaje tipo sensor_msgs/JointState		--> Se puede indicar el movimiento de cada dedo con el mensaje (aunque sea el mismo que el JointStates)
+/allegroHand_0/lib_cmd        --> Mensaje tipo std_msgs/String 			--> Tipo de movimiento ("home", "ready", ...)
+/allegroHand_0/joint_states   --> Mensaje tipo sensor_msgs/JointState		--> Estado de las articulaciones
+	
+	
+	
+
+############## UR5e ###############
+roslaunch ur5e_moveit_config demo.launch
+
+roslaunch ur_calibration calibration_correction.launch robot_ip:=172.18.34.201 target_filename:="/daniel/Desktop/evo_pipe/calibration.yaml"
+roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=172.18.34.201 kinematics_config:="/daniel/Desktop/evo_pipe/calibration.yaml"
+roslaunch ur5e_moveit_config move_group.launch 
+roslaunch ur5e_moveit_config moveit_rviz.launch rviz_config:=$(rospack find ur5e_moveit_config)/launch/moveit.rviz
+
+Abrir terminales paralelas dentro de la docker:
+	sudo docker container ls -> dara un container ID (ejemplo 2b094593e916)
+	sudo docker exec -it <CONTAINER_ID> bash -> ejemplo(sudo docker exec -it 2b094593e916 bash)
+
+Probar la camara:
+	(asegurarse que la camara tenga la version 5.13. Sino instalar el .bin de dentro del zip con el realsense-viewer)
+	roslaunch realsense2_camera rs_camera.launch
+
+Probar el ur:
+	(sim) roslaunch ur5e_moveit_config demo.launch
+	
+	(real - comprobar robot operativo) ping 172.18.34.201
+	(real - conexion VNC) vncviewer 172.18.34.201
+	(real - calibrar brazo (si fuese necesario)) roslaunch ur_calibration calibration_correction.launch robot_ip:=172.18.34.201 target_filename:="${HOME}/calib.yaml"
+	(real - conexion brazo con ROS) roslaunch ur_robot_driver ur5e_bringup.launch  robot_ip:=172.18.34.201 kinematics_config:="${HOME}/calib.yaml"
+	(real - habilitar URCaps) En interfaz UR, ejecutar el programa "external_control.urp" y darle al play. OJO: la IP del ordenador host debe ser la del ordenador que lo controla
+	(real - cargar info brazo real) roslaunch ur5e_moveit_config moveit_planning_execution.launch 
+	(real - simular rviz pero brazo se mueve) roslaunch ur5e_moveit_config moveit_rviz.launch

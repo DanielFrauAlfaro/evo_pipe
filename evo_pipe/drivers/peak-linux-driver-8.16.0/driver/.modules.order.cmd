@@ -1,0 +1,1 @@
+cmd_/home/daniel/Desktop/evo_pipe/drivers/peak-linux-driver-8.16.0/driver/modules.order := {   echo /home/daniel/Desktop/evo_pipe/drivers/peak-linux-driver-8.16.0/driver/pcan.ko; :; } | awk '!x[$$0]++' - > /home/daniel/Desktop/evo_pipe/drivers/peak-linux-driver-8.16.0/driver/modules.order

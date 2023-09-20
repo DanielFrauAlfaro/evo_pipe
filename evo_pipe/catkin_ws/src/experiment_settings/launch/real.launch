@@ -1,0 +1,17 @@
+<launch>
+
+    <arg name="save_files_path" value="/daniel/Desktop/evo_pipe/saved_files/" />
+    <arg name="mode" value="real"/>
+
+    <node name="controlSpawnPicture" pkg="experiment_settings" type="object_gestion_capture" output="screen">
+        <param name="save_files_path" value="$(arg save_files_path)" />    
+        <param name="mode" value="$(arg mode)"/>
+    </node>
+
+    <node name="moveitGrasp" pkg="experiment_settings" type="moveit_grasp" output="screen">
+    <param name="save_files_path" value="$(arg save_files_path)" />
+    <param name="mode" value="$(arg mode)"/>
+    <!--<param name="urdf_path" value="$(arg urdf_path)" />    -->           
+  </node>
+
+</launch>

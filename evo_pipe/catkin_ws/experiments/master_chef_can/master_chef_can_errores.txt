@@ -1,0 +1,3 @@
+------- Errores -------
+
+Puntos conjuntos con separación inválida --> Demasiado pequeña

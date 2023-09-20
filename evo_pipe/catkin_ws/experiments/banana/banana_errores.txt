@@ -1,0 +1,3 @@
+------- Errores -------
+
+Puntos desalineados --> Deberían cumplir las restricciones de los parámetros

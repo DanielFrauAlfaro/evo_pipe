@@ -1,0 +1,22 @@
+Dataset YALE: https://www.ycbbenchmarks.com/object-set/
+    Mallas YALE: http://ycb-benchmarks.s3-website-us-east-1.amazonaws.com/
+
+Pinza 3F: http://wiki.ros.org/robotiq/Tutorials/Control%20of%20a%203-Finger%20Gripper%20using%20the%20Modbus%20TCP%20Protocol
+
+Pinza 4F: https://github.com/gokhansolak/allegro-hand-ros.git
+
+Calcular inercias: https://classic.gazebosim.org/tutorials?tut=inertia
+
+GitHub Pybullet-YCB: https://github.com/eleramp/pybullet-object-models/tree/master
+    - Power drill
+    - Foam brick
+    - Chips can
+
+Github Bowl YCB: https://github.com/jontromanab/object_models/tree/master
+    - Bowl ?????
+
+
+Github Descargar todos los modelos: https://github.com/sea-bass/ycb-tools
+
+
+Explicación controlador esfuerzo para el motor de físicas: https://www.youtube.com/watch?v=JO5NH0GR3qQ

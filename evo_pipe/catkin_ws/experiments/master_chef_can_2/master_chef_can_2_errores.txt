@@ -1,0 +1,3 @@
+------- Errores ------
+
+Distancia de los puntos conjuntos inválida --> Demasiado pequña

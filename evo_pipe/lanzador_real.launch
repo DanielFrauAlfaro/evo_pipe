@@ -1,0 +1,65 @@
+<launch>
+
+<!-- Despues de lanzar todos los programas siguientes, se ejecuta el nodo rgbd_captured. Este 
+inicia el proceso -->
+
+<!-- Lanzamiento de la camera d435i -->
+        <include file="$(find realsense2_camera)/launch/rs_camera.launch" >
+		<arg name="filters" value="pointcloud,disparity,spatial,temporal,hole_filling,decimation" />
+                <arg name="depth_width" value="640" />
+                <arg name="depth_height" value="480" />
+                <arg name="color_width" value="640" />
+                <arg name="color_height" value="480" />
+		<arg name="align_depth" value="true" />
+	</include>
+
+
+<!-- Lanzamiento de Mask-RCNN para la deteccion de objetos. Si se lanza esta linea hay que comentar la linea que lanza rviz en mask_rcnn_ros -->
+	<!-- <include file="$(find mask_rcnn_ros)/examples/example.launch" /> -->
+        <!--<node name="mask_rcnn" pkg="mask_rcnn_ros" type="mask_rcnn_node" output="screen">
+                <remap from="~input" to="/camera/rgb/image_color" />
+                <param name="~visualization" value="true" />
+    </node>-->
+         <node name="yolact" pkg="yolact_ros" type="yolact_node" output="screen">
+                <remap from="~input" to="/camera/rgb/image_color" />
+                <param name="~visualization" value="true" />
+         </node>
+
+<!-- En el caso de ejecutar los movimientos en el entorno real no incluir esta linea -->
+<!-- Lanzamiento de la simulacion UR5e -->
+
+	<!--<include file="$(find ur5e_moveit_config_laboratory)/launch/demo.launch" />-->
+
+<!-- Lanzamiento del sistema real y simulacion RViz -->
+
+	<include file="$(find ur5e_moveit_config_laboratory)/launch/ur5_e_moveit_planning_execution.launch" />
+
+
+<!-- Captura de la deteccion y procesado de puntos de agarre -->
+	<node pkg="geograsp" type="segmentation_to_grasping" name="grasping_data_processing" output="screen"/> 
+
+
+<!-- Captura de puntos de agarre y planificacion de movimientos de agarre -->  
+	<node pkg="ur5e_moveit_config_laboratory" type="move_planner_ur5e_real" name="planning_robot_movement" output="screen"/>
+
+
+
+<!-- Lanzamiento del controlador del gripper de robotiq -->
+	<!-- <node pkg="robotiq_2f_gripper_control" type="Robotiq2FGripperRtuNode.py" name="robotiq2FGripper" args="/dev/ttyUSB0" output="screen"/> -->
+
+
+<!-- Lanzamiento del controlador del gripper de robotiq  -->
+	<node pkg="robotiq_2f_gripper_control" type="robotiq_control_modified_real.py" name="robotiq_control" output="screen"/>
+
+
+
+<!--Lanzamiento del nodo -->
+	<!--pkg=nombre del paquete//type=nombre del programa cpp//name=nombre del nodo-->
+	
+<!--<node pkg="hector_trajectory_server" type="hector_trajectory_server" name="trajectory_gripper" ns="base" >
+	<param name="/target_frame_name" value="base" />
+	<param name="/source_frame_name" value="camera_link" />
+	<param name="/trajectory_update_rate" value="10.0" />
+	<param name="/trajectory_publish_rate" value="10.0" />
+</node>-->
+</launch>

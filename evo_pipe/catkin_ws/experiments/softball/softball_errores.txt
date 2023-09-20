@@ -1,0 +1,3 @@
+------- Errores ------
+
+Puntos desalineados --> No cumplen las restricciones de distancia especificadas en los parámetros

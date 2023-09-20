@@ -1,0 +1,3 @@
+------- Errores -------
+
+Puntos coincidentes --> Los puntos de los dedos que están juntos coinciden

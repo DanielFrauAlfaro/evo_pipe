@@ -1,0 +1,4 @@
+----------- Errores ----------
+
+Puntos conjuntos a una distancia inválida --> Demasiado pequeña
+

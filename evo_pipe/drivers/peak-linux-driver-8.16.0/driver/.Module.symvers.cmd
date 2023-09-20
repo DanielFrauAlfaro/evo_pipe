@@ -1,0 +1,1 @@
+cmd_/home/daniel/Desktop/evo_pipe/drivers/peak-linux-driver-8.16.0/driver/Module.symvers := sed 's/\.ko$$/\.o/' /home/daniel/Desktop/evo_pipe/drivers/peak-linux-driver-8.16.0/driver/modules.order | scripts/mod/modpost -m -a  -o /home/daniel/Desktop/evo_pipe/drivers/peak-linux-driver-8.16.0/driver/Module.symvers -e -i Module.symvers   -T -

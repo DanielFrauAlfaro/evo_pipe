@@ -1,0 +1,4 @@
+------- Errores -------
+
+Puntos encima del objeto --> Puede deberse a que la nube de puntos es parcial
+Separación de los puntos conjuntos demasiado pequeña

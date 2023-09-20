@@ -1,0 +1,1 @@
+/usr/bin/cc  -Wall -Wextra  -rdynamic CMakeFiles/simple_test.dir/simple_test.c.o  -o /daniel/Desktop/evo_pipe/catkin_ws/devel/lib/soem/simple_test  /daniel/Desktop/evo_pipe/catkin_ws/devel/lib/libsoem.a -lpthread -lrt 

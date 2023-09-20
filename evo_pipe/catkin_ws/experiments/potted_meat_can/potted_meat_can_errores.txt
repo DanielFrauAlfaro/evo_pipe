@@ -1,0 +1,4 @@
+-------- Errores ------
+
+Puntos coincidentes --> Los puntos parejos coinciden
+Puntos encima del objeto --> Seguramente debido a que la nube de puntos está cortada

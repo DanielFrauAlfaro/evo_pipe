@@ -1,0 +1,253 @@
+###### Pinza 4F:
+    - Inclusión en la simulación: se debe poner a 0.0 la inercia de todos los eslabones de la pinza en las definición
+    de los parámetros de configuración para que aparezca correctamente en Gazebo, ya que en RVIZ se ve bien en
+    principio
+
+    - Se pueden controlar los 4 dedos por separado, ya que el control se hace en articulares, tanto en real como en simulación
+
+    - Topic de planificación: /move_group/motion_plan_request --> moveit_msgs/MotionPlanRequest
+    - Topic de ejecución: /execute_trajectory/goal --> moveit_msgs/ExecuteTrajectoryActionGoal
+
+
+/allegroHand_0/joint_cmd      --> Mensaje tipo sensor_msgs/JointState		--> Se puede indicar el movimiento de cada dedo con el mensaje (aunque sea el mismo que el JointStates)
+/allegroHand_0/lib_cmd        --> Mensaje tipo std_msgs/String 			--> Tipo de movimiento ("home", "ready", ...)
+/allegroHand_0/joint_states   --> Mensaje tipo sensor_msgs/JointState		--> Estado de las articulaciones
+	
+
+##### Pinza 3F:
+    - Ancho dos dedos: 12.5 cm
+    - Ancho palma: 10.5 cm
+    - Entre dedos: 11.1 cm
+    - MAX: 15.5 cm
+    - Entre dedos enfrentados: 9.25 cm
+
+
+##### Objetos elegidos (28): --> Están todos en la carpeta /evo_pipe/ycb como SDF
+    - Gelatin box 
+    - Mustard bottle
+    - Sugar box
+    - Bleach cleanser
+    - Tomato soup can
+    - Chocolate pudding box
+    - Pear
+    - Plum
+    - Coffe can (Master Chef Can)
+    - Tuna can
+    - Windex Bottle (bleach cleanser)
+    - Chips can
+    - Foam brick
+    - Power drill
+    - Stacking blocks (big one)
+    - Softball
+    - Enamel-coated metal bowl
+    - Timer
+    - Spring Clamps (big)
+    - 9 hole peg
+    - a Colored wood blocks (la caja entera)
+    - Pitcher
+    - Cracker Box
+    - Banana
+    - Mug
+    - Potted Meat Can
+    - Orange
+    - Flat Screwdriver
+
+
+    Para poder incluirlos en la simulación no se ha utilizado el formato URDF sino que se ha usado el formato SDF 
+de Gazebo. Para ello se ha modificado el código original en los siguientes puntos:
+    - DockerFile:
+        - l. 177: ++ RUN echo "export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:/daniel/Desktop/evo_pipe/ycb" >> ~/.bashrc
+        Se ha añadido otra asignación del parámetro del sistema 'GAZEBO_MODEL_PATH' para que Gazebo seleccione como
+    directorio para obtener sus modelos la carpeta '/ycb' donde están los modelos SDF de los objetos
+
+    - catkin_ws/src/experimental_settings/launch/simulation.launch:
+        - l. 25: <arg name="objects_dir" value="/daniel/Desktop/evo_pipe/ROS_URDF_objects/" /> --> <arg name="objects_dir" value="/daniel/Desktop/evo_pipe/ycb/" />
+        Se cambia el directorio desde el que se obtienen los modelos, del de los URDF al de los SDF en '/ycb'
+
+    - catkin_ws/src/experimental_settings/src/object.cpp: 
+        - l. 50: chosenObjects.push_back(objects[random]+"/model.urdf"); --> chosenObjects.push_back(objects[random]+"/model.sdf");
+        Se cambia el archivo de configuracion de los modelos al ser estos SDF.
+
+    - catkin_ws/src/experimental_settings/src/load_delete_objects.cpp:
+        - l. 93: ++ spawn.request.model_name="object";
+        Se añade un nombre a la petición del servicio de importación del objeto
+        - l. 98: std::string topicGazebo = "/gazebo/spawn_urdf_model"; --> std::string topicGazebo = "/gazebo/spawn_sdf_model";
+        Se cambia el servicio que importa los modelos, ya que en vez de ser URDF son SDF, por lo que se requiere el 
+        servicio con el mismo nombre
+
+
+############# PREGUNTAS #################
+    - Como serían los parámetros de Geograsp para la pinza de 4 dedos, sobretodo como funciona el parámetro de separación
+    - Comentar que la pinza de 4 dedos, al igual que con la de 3, es muy difícil meterla dentro de Moveit. La de tres dedos
+    no debería hacer falta, ya que es adaptable, pero la de 4 es mas probable. Se podría hacer publicando en los topics de
+    control o hacer cadenas cinemáticas para cada dedo y planificar con ellos.
+
+
+
+########### TAREAS ######################
+
+TERMINADO
+    - Mirar segmentación de objetos planos  -->  Segmenta bien pero aun así solo saca un plano, lo que dificulta
+el cálculo de puntos de agarre
+    - Cambiar el cierre de la pinza, debe ser cada dedo independiente: cuando se detecte un contacto, incrementar un 
+poco el cierre y pararse (con dos flags alomejor). Cuando se tenga contacto en los tres, detener el cierre 
+--> Terminado a priori. Está con dos flags para cada dedo; cuando se activa uno, se hace un incremento más y cuando
+se activa el siguiente (que va una iteración por detrás del otro) deja de mover el dedo. También, si no se detecta nada
+resetea los dos flags
+    - Testear si el topic de cmd de la allegro tiene en cuenta la posición de los valores publicando valores de home -->
+Funciona si están en orden del 0 al 15, tal cual se publica el topic /allegro0/joint_states de la allegro
+    - Comprobar como funciona el /joint_states de moveit para ver si se puede engañar --> se puede engañar a moveit. En
+el move_group.launch he hehco el remap de los topics, aunque está con parámetros, de manera que si se lanza ese launch
+se ejecuta normal, mientras se puede modificar desde línea de comandos u otro launch. 
+    IMPORTANTE: Hay veces que al realizar una trayectoria falla por inconsistencias en el goal (fallo al llegar al GOAL),
+por lo que para moveit todavía no ha llegado a esa posición. La siguiente planificación la tomará desde el punto inicial
+de la anterior trayectoria, no desde el final / actual. Para solucionar el problema se puede hacer una planificación y 
+ejecución de una trayectoria con otro grupo de movimiento. También se podría aumentar la tolerancia de Moveit.
+    - Comprobar las masas de los objetos en simulación --> Se ha guardado una copia de las originales en caso de 
+    necesitar un back-up. Pesar algunos objetos como el Windex_Bottle, puede no coincidir
+    - Reducir el rango de aparición de los objetos, es demasiado amplio y está demasiado escorado hacia la derecha, por
+eso muchas de las trayectorias falla; los puntos están bien generalmente, pero el objeto está en una posición 
+inconveniente --> Hecho, aunque a veces se queda el objeto alejado de la zona, por el punto de referencia del objeto
+supongo
+
+    - Hacer la configuración de Geograsp con la pinza de 4 dedos --> Está hecha
+    IMPORTANTE: preguntar a ver si está bien, están estimadas a ojo con el pulgar abierto y cerrado
+
+    - La razón por la que en un inicio las físicas de Gazebo fallaban es por los controladores del robot, no era por la
+fricción (puede que estén demasiado altas incluso) ni por las colisiones (que si que las detecta). Esto se debe a que 
+las físicas de Gazebo no funcionan bien con controladores en posición, que era como se habían configurado los 
+controladores desde un inicio. Por ello se tienen que utilizar controladores de esfuerzo en las articulaciones de los 
+robots. 
+También se ha anulado los valores inerciales del modelo de la mesa por si diera problemas con el rozamiento e impidiera
+a los objetos moverse sobre ella cuando los empuja al agarrarlos (esto parece no ser significativo) 
+
+
+EN PROCESO
+    - Meter en la carpeta del dataset la taza y la potted_meat_can del YCB, que no las vi y están en la caja de los 
+    objetos que no son de YCB del laboratorio --> Pregunar si alguien las va a usar, porque están ahí
+    - IMPORTANTE: se tiene que cambiar el topic de states del UR5e real, a ver donde hacer el remapeo --> se puede 
+    comprobar haciendo grupos en un launch en simulación; si se lanza el bringup con un grupo y el moveit sin, alomejor
+    no se ven entre ellos y se puede usar el puente
+
+    - Comprobar de estimar el vector perpendicular a la recta que minimice el ángulo con la vertical del eje Z --> Hay
+solución por optimización (Wolfram Alpha) pero no la puedo sacar analíticamente. De momento está que si se tienen dos
+puntos similares se coge la vertical del eje Z como perpendicular al plano
+    IMPORTANTE: la optimización se hace usando el método de Lagrange, añadiendo una ecuación auxiliar al cálculo
+    ESTO NO SALE NO SE PORQUE, el problema tiene que estar mal planeado teóricamente pero no se por dondeç
+    IMPORTANTE: dejo esto aparcado de momento. Es mucho lío el cambio de sistemas de referencia y orientaciones para que 
+salga correctamente
+
+    - Hacer un servicio auxiliar por si falla el planificador de Moveit. Lo que debería hacer es si se planifica una
+trayectoria inválida, se active un servicio que reciba el punto de destino y lleve al robot allí directamente mediante
+los topics articulares del robot. Para ello antes se debe calcular la cinemática inversa del robot en el punto de 
+destino y aplicarla directamente. Una vez acabe la trayectoria, se indica el resultado al programa principal para seguir
+con el funcionamiento normal --> Se podría usar Python con la Robotic Toolbox o mirar otra solución en C++.
+    IMPORTANTE: está hecho 
+    
+
+SIN EMPEZAR
+
+    - Sacar paquete de Moveit de la Allegro solo
+    
+
+###### ERRORES --> Siempre da error en la "joint_0" o "joint_1"
+    - Error de planificación Moveit: [ERROR] [1691563141.203459658]: 
+Invalid Trajectory: start point deviates from current robot state more than 0.01
+joint 'joint_0': expected: 0.0933329, current: 0.0550587
+
+###### Posición random_valid:
+  - joint_0
+  - joint_1
+  - joint_2
+  - joint_3
+  - joint_4
+  - joint_5
+  - joint_6
+  - joint_7
+  - joint_8
+  - joint_9
+  - joint_10
+  - joint_11
+  - joint_12
+  - joint_13
+  - joint_14
+  - joint_15
+position: [-0.09464827826864083, 0.8350591778610523, 0.7890181857074536, 0.7150823886708259, -0.05413490951110592, 0.36794109894322113, 1.226975475852992, 1.0281541430911414, 0.3993582859121047, -0.10876406951319414, 1.1157451208438416, -0.023902065015476193, 1.1421239783931725, 0.6524758975189661, 0.9201927361148228, 0.8503960606504295]
+velocity: [-0.008938840238798464, 0.003325726167712293, 0.0035951679482925524, -0.00817849959148776, 0.01634635386823065, -0.0021008476675325534, 0.003930375721802611, 0.011505324213372779, 0.00770633466722688, 0.001936511963086346, -0.022864192200872088, -0.00635048599862382, 0.01521741380676608, -0.017639792880576533, 0.0027646597903756044, 0.011584980875279238]
+effort: [-0.02557162960424807, -0.057606131348584215, -0.06186359804221549, -0.07580544983982494, -0.03965863641358786, -0.025284355802451794, -0.01126091494790644, 0.02519957022319347, 0.010622535456581182, 0.045262103905533355, 0.019336746913010353, -0.03589716939105627, 0.12661101695078966, 0.19621681249529033, 0.02254170406700629, 0.03032203371421542]
+
+
+####### Pipeline de lanzamiento en real (3F) ########
+    - UR5e y pinza 3F encendido                                                     - Terminal 1
+    - RealSense encendida conectada con el ordenador                                - Terminal 2
+    - UR5e conectado al ordenador via Ethernet con el control external_control      - Terminal 3
+    - Pinza 3F conectada via Ethernet mediante el launch del fabricante             - Terminal 4
+-- Comprobar que se pueden ver los topics
+    
+-- En cuanto a la visualización del proyecto                                        - Terminal 5 (todo lo de abajo)
+    - RVIZ del proyecto, se debe de poder ver:                                   (configurar un entorno de RVIZ con esto)
+        - El planificador de Moveit
+        - La imagen tridimensional capturada por la RealSense
+        - La imagen bidimensional capturada por la RealSense
+        - Escenario de manipulación
+
+-- En cuanto a los nodos:
+    - El nodo coordinador central adaptado a la ejecución en real (sin llamadas al spawner de objetos de la simulación)
+    - El nodo de Geograsp
+    - El nodo de Moveit adaptado al entorno real (move_group del Moveit real, publicación en topics de la pinza real, ...)
+    - El nodo que envíe los mensajes a la pinza de tres dedos
+IMPORTANTE: este último nodo se puede integrar dentro del nodo de Moveit, pero alomejor queda un poco farragoso
+
+
+
+
+
+
+- Fallos del GeoGrasp:
+    - Parece que no hay problema en la traducción de los puntos, ya que los puntos que devuelve el nodo de geoGrasp del
+paquete "experiment_settings" son los mismos que los representados en RVIZ. Esto se ha podido observar mostrando las 
+nubes de puntos finales con los puntos de agarre en el nodo y luego viendo los puntos en RVIZ en el programa.
+    Se están haciendo algunos "rosbags" que almacenen la información de los experimentos fallidos junto con algunas 
+capturas explicativas de los problemas.
+
+    - En la prueba de "naranja_bien?_2" se han visto los puntos que devuelve el algoritmo y no se cumple que la distancia
+(al menos entre dos de ellos) se de 0.036 metros. Los puntos son:
+
+        - 
+        x: -0.036385491490364075
+        y: 0.010523765347898006
+        z: 0.3767339885234833
+        - 
+        x: -0.07914240658283234
+        y: 0.05286387354135513
+        z: 0.367044597864151
+        - 
+        x: -0.08975385874509811
+        y: 0.041447531431913376
+        z: 0.3676515519618988
+
+    Y las distancias serían:
+        - Puntos 1 y 2: 0.123
+        - Puntos 1 y 3: 0.13
+        - Puntos 2 y 3: 0.17
+
+    Ninguna es igual que la distancia especificada como parámetro en el fichero .launch.
+
+
+    Al parecer lo que estaba ocurriendo era que a la hora de pasar a enteros los parámetros de la apertura de la pinza 
+se obviaba que podía existir una distancia negativa según el sistema de referencia, por lo que el rango era entre 0 y 
+36. Esto provocaba que se pudieran dar coincidencias en los puntos de agarre
+
+    Aun asi se siguen dando algunos agarres en los que si que se producen puntos coincidentes. También hay problemas con
+los objetos que son percibidos como un plano por la cámara RGBD, indicando los puntos de agarre sobre el objeto, lo que
+resulta imposible. Este último hecho es esperado debido a que la nube de puntos representa parcialmente la forma del
+objeto.
+
+################### COSAS QUE HACER #########
+    - Hacer un nodo que traduzca los valores articulares a el rango [0, 255] del pinza de tres dedos y otro que haga la
+operación contraria para comprobar si se puede aplicar la cinemática inversa
+    - Quitar las referencias a "plotvol3" en el fichero transforms3d.py de la librería de la robotictoolbox de Peter 
+Corke para Python que se encuentra en la ubicación de la Docker /usr/local/lib/python3.8/dist-packages/spatialmath/base.
+Sería modificar un fichero equivalente fuera de la docker y al compilarla moverlo dentro con los cambios hechos.
+    Esto solo se podría hacer si no se va a usar el ploteo supongo, asi que hay que tenerlo en cuenta. Poner un 
+PRINT por si se usa en algun momento

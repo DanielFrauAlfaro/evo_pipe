@@ -1,0 +1,4 @@
+------- Errores ------
+
+Puntos de los dedos conjuntos a distancia inválida --> Demasiado pequeña
+Puntos encima del objeto

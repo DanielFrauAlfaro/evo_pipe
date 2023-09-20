@@ -1,0 +1,58 @@
+Experimentos finales:
+
+	1. Roscore
+		terminal 1:
+			(base) ignacio@ignacio-H110M-S2PV:~$  cd Desktop/aurova_ws/
+			(base) ignacio@ignacio-H110M-S2PV:~/Desktop/aurova_ws$ source devel/setup.bash
+			(base) ignacio@ignacio-H110M-S2PV:~/Desktop/aurova_ws$ roscore
+
+	2. Pinza
+		terminal 1:
+			(base) ignacio@ignacio-H110M-S2PV:~$  cd Desktop/aurova_ws/
+			(base) ignacio@ignacio-H110M-S2PV:~/Desktop/aurova_ws$ source devel/setup.bash
+
+			-- Poner la esponja
+
+			(base) ignacio@ignacio-H110M-S2PV:~/Desktop/aurova_ws$ rosrun robotiq_2f_gripper_control Robotiq2FGripperRtuNode.py /dev/ttyUSB0
+
+		terminal 2:
+			(base) ignacio@ignacio-H110M-S2PV:~$  cd Desktop/aurova_ws/
+			(base) ignacio@ignacio-H110M-S2PV:~/Desktop/aurova_ws$ source devel/setup.bash
+			(base) ignacio@ignacio-H110M-S2PV:~/Desktop/aurova_ws$ rosrun robotiq_2f_gripper_control Robotiq2FGripperSimpleController.py
+
+				-- r, a (Poner la esponja)
+
+	3. Robot
+		Apretar el boton verde para encender el robot
+		terminal 1:
+			(base) ignacio@ignacio-H110M-S2PV$ ping 172.18.34.201
+
+			--Si funciona, se puede hacer control C
+
+			(base) ignacio@ignacio-H110M-S2PV$ vncviewer 172.18.34.201
+			--La contraseña es "easybot"
+
+			Dentro de la interfaz del ur, encender el robot y asegurarse de que el robot esta en running.
+
+		terminal 2:
+			(base) ignacio@ignacio-H110M-S2PV:~$ cd Desktop/aurova_ws/
+			(base) ignacio@ignacio-H110M-S2PV:~/Desktop/aurova_ws$ source devel/setup.bash
+			(base) ignacio@ignacio-H110M-S2PV:~/Desktop/aurova_ws$ roslaunch ur_robot_driver ur5e_bringup.launch robot_ip:=172.18.34.201 kinematics_config:=/home/ignacio/catkin_ws/src/calib.yaml
+
+			-- Tras ello, lanzar el programa de external_control.urp y darle al play para ver que funcione
+
+
+	6. Inicio procesos
+		terminal 1:
+			(base) ignacio@ignacio-H110M-S2PV:~$  cd Desktop/aurova_ws/			
+			(base) ignacio@ignacio-H110M-S2PV:~/Desktop/aurova_ws$ sudo su
+			root@ignacio-H110M-S2PV:/home/ignacio/Desktop/aurova_ws# source devel/setup.bash
+			root@ignacio-H110M-S2PV:/home/ignacio/Desktop/aurova_ws# roslaunch ur5e_moveit_config_laboratory lanzador_real.launch			
+
+		terminal 2:
+			(base) ignacio@ignacio-H110M-S2PV:~$  cd Desktop/aurova_ws/			
+			(base) ignacio@ignacio-H110M-S2PV:~/Desktop/aurova_ws$ sudo su
+			root@ignacio-H110M-S2PV:/home/ignacio/Desktop/aurova_ws# source devel/setup.bash
+			root@ignacio-H110M-S2PV:/home/ignacio/Desktop/aurova_ws# rosrun geograsp rgbd_captured
+
+		

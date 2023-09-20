@@ -1,0 +1,11 @@
+RELEASED OBJECT IN: 
+	 Object: /daniel/Desktop/evo_pipe/ycb/010_potted_meat_can/model.sdf
+	 Pose: 0.22106, 0.566357, 0.8
+	 Orientation: 
+		 Quaternion ->0.22252, 0.0460769, 0.630519, -0.742164
+		 RPY ->5.98849, 5.92668, 4.92817
+CURRENT OBJECT IN: 
+	 Pose: 0.174615, 0.548682, 0.790784
+	 Orientation: 
+		 Quaternion ->0.583817, -0.375576, -0.418681, 0.585497
+		 RPY ->1.53454, 0.0490885, -1.19422
