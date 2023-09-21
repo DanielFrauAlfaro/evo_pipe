@@ -1058,6 +1058,12 @@ int main(int argc, char *argv[]){
   // Rviz publish things
   ros::Publisher vis_pub = nh.advertise<visualization_msgs::Marker>("visualization_marker", 1);
   
+  moveit::planning_interface::MoveGroupInterface::Plan my_plan_arm2; 
+
+  (move_group_interface_gripper).setJointValueTarget((move_group_interface_arm).getNamedTargetValues("home"));
+  (move_group_interface_gripper).plan(my_plan_arm2);
+  (move_group_interface_gripper).execute(my_plan_arm2); 
+
   geometry_msgs::PoseStamped current_pose;
   std::vector<double> joint_values;
   std::vector<std::string> joint_names;
