@@ -1,2 +1,0 @@
-set(realsense2_camera_MESSAGE_FILES "/daniel/Desktop/evo_pipe/catkin_ws/src/realsense-ros/realsense2_camera/msg/IMUInfo.msg;/daniel/Desktop/evo_pipe/catkin_ws/src/realsense-ros/realsense2_camera/msg/Extrinsics.msg;/daniel/Desktop/evo_pipe/catkin_ws/src/realsense-ros/realsense2_camera/msg/Metadata.msg")
-set(realsense2_camera_SERVICE_FILES "/daniel/Desktop/evo_pipe/catkin_ws/src/realsense-ros/realsense2_camera/srv/DeviceInfo.srv")
