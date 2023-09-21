@@ -1,8 +1,0 @@
-prefix=/daniel/Desktop/evo_pipe/catkin_ws/devel
-
-Name: bhand
-Description: Description of bhand
-Version: 0.0.0
-Cflags: -I/daniel/Desktop/evo_pipe/catkin_ws/src/allegro-hand-ros/bhand/include
-Libs: -L${prefix}/lib -lBHand
-Requires: 
