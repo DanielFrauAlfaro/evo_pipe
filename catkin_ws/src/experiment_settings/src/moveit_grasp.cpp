@@ -393,9 +393,9 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     std::cout<<"Final vector 2: "<<vectorY[0]<<" "<<vectorY[1]<<" "<<vectorY[2]<<std::endl;
     std::cout<<"Final vector 3: "<<vectorZ[0]<<" "<<vectorZ[1]<<" "<<vectorZ[2]<<std::endl;
     
-    graspAndMiddlePointsWorldFrame[3][0] = new_mid_2[0];
-    graspAndMiddlePointsWorldFrame[3][1] = new_mid_2[1];
-    graspAndMiddlePointsWorldFrame[3][2] = new_mid_2[2];
+    // graspAndMiddlePointsWorldFrame[3][0] = new_mid_2[0];
+    // graspAndMiddlePointsWorldFrame[3][1] = new_mid_2[1];
+    // graspAndMiddlePointsWorldFrame[3][2] = new_mid_2[2];
 
     std::fstream my_file;
     my_file.open(saveFilesPath+std::to_string(actualObject)+"_info.txt", std::ios::app);
@@ -888,7 +888,7 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
     std::vector<double> joint_values = (*move_group_interface_gripper).getCurrentJointValues();
     std::vector<std::string> joint_names = (*move_group_interface_gripper).getJoints();
 
-    int mult_ini = 2;  
+    int mult_ini = 4;  
     
     for (int i=0;i<joint_values.size(); i++){
       if(i == 0 and not contact1_prev)
@@ -896,9 +896,9 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
         int mult = mult_ini;
         if(contact1_b)
         {
-          mult = 1;
+          mult = 2;
         }
-        joint_values[i] = gripper_value;
+        joint_values[i] += mult * 0.0174533 ;//gripper_value;
         joint_values[i+2] = -0.61085;
         contact1_prev = contact1_b;
       }
@@ -910,7 +910,7 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
         {
           mult = 1;
         }
-        joint_values[i] = gripper_value;
+        joint_values[i] += mult * 0.0174533 ;//gripper_value;
         joint_values[i+2] = -0.61085;
         contact2_prev = contact2_b;
       }
@@ -922,7 +922,7 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
         {
           mult = 1;
         }
-        joint_values[i] = gripper_value;
+        joint_values[i] += mult * 0.0174533 ;//gripper_value;
         joint_values[i+2] = -0.61085;
         contact3_prev = contact3_b;
       }
@@ -935,12 +935,14 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
     (*move_group_interface_gripper).plan(*my_plan_arm);
     (*move_group_interface_gripper).execute(*my_plan_arm);
 
-    std::string aux;
-
-    cin>>aux;
-
-    std::this_thread::sleep_for(std::chrono::seconds(2));       
+         
   }   
+
+  std::string aux;
+
+  cin>>aux;
+
+  std::this_thread::sleep_for(std::chrono::seconds(2));  
     
   if (contact == true){
     finger1Contact.unsubscribe();
@@ -1060,9 +1062,9 @@ int main(int argc, char *argv[]){
   
   moveit::planning_interface::MoveGroupInterface::Plan my_plan_arm2; 
 
-  (move_group_interface_gripper).setJointValueTarget((move_group_interface_arm).getNamedTargetValues("home"));
-  (move_group_interface_gripper).plan(my_plan_arm2);
-  (move_group_interface_gripper).execute(my_plan_arm2); 
+  (move_group_interface_arm).setJointValueTarget((move_group_interface_arm).getNamedTargetValues("home"));
+  (move_group_interface_arm).plan(my_plan_arm2);
+  (move_group_interface_arm).execute(my_plan_arm2); 
 
   geometry_msgs::PoseStamped current_pose;
   std::vector<double> joint_values;
