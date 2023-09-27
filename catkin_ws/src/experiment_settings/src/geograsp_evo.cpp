@@ -80,7 +80,7 @@ std::vector<std::vector<float>> removeExceptNumbers(int numberFingers, std::stri
     {
       is_number = false;
 
-      correctedNumbers[col][row] = std::stof(aux)*1000;
+      correctedNumbers[col][row] = std::stof(aux);
       aux = "";
       col++;
 
