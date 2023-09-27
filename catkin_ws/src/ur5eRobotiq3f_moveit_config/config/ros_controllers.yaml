@@ -82,36 +82,42 @@ arm_controller:
     - wrist_2_joint
     - wrist_3_joint
   gains:
-    shoulder_pan_joint:
-      p: 2095
-      d: 153
-      i: 100.0
-      i_clamp: 1
-    shoulder_lift_joint:
-      p: 2090
-      d: 183
-      i: 100
-      i_clamp: 1
-    elbow_joint:
-      p: 2100
-      d: 143
-      i: 100
-      i_clamp: 1
-    wrist_1_joint:
-      p: 125
-      d: 10
-      i: 10
-      i_clamp: 1
-    wrist_2_joint:
-      p: 125
-      d: 10
-      i: 10
-      i_clamp: 1
-    wrist_3_joint:
-      p: 39
-      d: 4.5
-      i: 5
-      i_clamp: 1
+    shoulder_pan_joint: {p: 4000,  d: 200, i: 1, i_clamp: 1}
+    shoulder_lift_joint: {p: 10000,  d: 200, i: 1, i_clamp: 1}
+    elbow_joint: {p: 2000,  d: 20, i: 1, i_clamp: 1}
+    wrist_1_joint: {p: 125,  d: 10, i: 10, i_clamp: 1}
+    wrist_2_joint: {p: 125,  d: 10, i: 10, i_clamp: 1}
+    wrist_3_joint: {p: 39,  d: 4.5, i: 5, i_clamp: 1} 
+    # shoulder_pan_joint:
+    #   p: 2095
+    #   d: 153
+    #   i: 100.0
+    #   i_clamp: 1
+    # shoulder_lift_joint:
+    #   p: 2090
+    #   d: 183
+    #   i: 100
+    #   i_clamp: 1
+    # elbow_joint:
+    #   p: 2100
+    #   d: 143
+    #   i: 100
+    #   i_clamp: 1
+    # wrist_1_joint:
+    #   p: 125
+    #   d: 10
+    #   i: 10
+    #   i_clamp: 1
+    # wrist_2_joint:
+    #   p: 125
+    #   d: 10
+    #   i: 10
+    #   i_clamp: 1
+    # wrist_3_joint:
+    #   p: 39
+    #   d: 4.5
+    #   i: 5
+    #   i_clamp: 1
     constraints:
       goal_time: 0.6
       stopped_velocity_tolerance: 0.05
