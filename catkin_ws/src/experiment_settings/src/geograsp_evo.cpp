@@ -243,10 +243,13 @@ void processPC(ros::NodeHandle nh, std::string saveFilesPath, int gripTipSize, i
         geoGraspPoints.setGrasps(graspsTrack); // Keep track only of the best
 
         
+        // ############################## SAVE PCDs ##########################################
         // Guardar la nube del objeto
-        std::cout<<"\n\nGUARDANDO LA NUBE\n\n";
-        pcl::io::savePCDFileASCII (saveFilesPath+std::to_string(actualObject)+"_object.pcd", *objectCloud);
-        pcl::io::savePCDFileASCII (saveFilesPath+std::to_string(actualObject)+"_plane.pcd", *cloudPlane);
+        //std::cout<<"\n\nGUARDANDO LA NUBE\n\n";
+        //pcl::io::savePCDFileASCII (saveFilesPath+std::to_string(actualObject)+"_object.pcd", *objectCloud);
+        //pcl::io::savePCDFileASCII (saveFilesPath+std::to_string(actualObject)+"_plane.pcd", *cloudPlane);
+        // ###################################################################################
+
 
         std::cout<<"\n\n######## COMPROBACIÓN DE PARÁMETROS ######\n";
         std::cout<<"gripTipSize: "<<gripTipSize<<std::endl;
@@ -525,12 +528,13 @@ void processPC(ros::NodeHandle nh, std::string saveFilesPath, int gripTipSize, i
       cloud_cluster->is_dense = true;
     }
     
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr save_PC (new pcl::PointCloud<pcl::PointXYZRGB>);
-    *save_PC = *PC_color_result;
-    *save_PC += *cloud_cluster;
+    // ###################### SAVE PCDs ###########################################
+    // pcl::PointCloud<pcl::PointXYZRGB>::Ptr save_PC (new pcl::PointCloud<pcl::PointXYZRGB>);
+    // *save_PC = *PC_color_result;
+    // *save_PC += *cloud_cluster;
     
-    pcl::io::savePCDFileASCII (saveFilesPath+std::to_string(actualObject)+"_PC_graspPoints.pcd", *save_PC);
-    
+    //pcl::io::savePCDFileASCII (saveFilesPath+std::to_string(actualObject)+"_PC_graspPoints.pcd", *save_PC);
+    // #############################################################################
     
     // pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(PC_color_result);
     // pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> points_rgb(cloud_cluster);
