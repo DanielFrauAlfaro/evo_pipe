@@ -487,7 +487,7 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     
     // Set two points in new axis system and get its position in world
     tf::Stamped<tf::Point> pointGrasp, pointPreGrasp;
-    pointGrasp.setX(-0.220); //-0.22
+    pointGrasp.setX(-0.21); //-0.22
     pointGrasp.setY(0);
     pointGrasp.setZ(0);
     pointGrasp.frame_id_ = "objectAxis";
@@ -888,7 +888,7 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
     std::vector<double> joint_values = (*move_group_interface_gripper).getCurrentJointValues();
     std::vector<std::string> joint_names = (*move_group_interface_gripper).getJoints();
 
-    int mult_ini = 4;  
+    int mult_ini = 3;  
     
     for (int i=0;i<joint_values.size(); i++){
       if(i == 0 and not contact1_prev)
@@ -896,7 +896,7 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
         int mult = mult_ini;
         if(contact1_b)
         {
-          mult = 2;
+          mult = 1;
         }
         joint_values[i] += mult * 0.0174533 ;//gripper_value;
         joint_values[i+2] = -0.61085;
@@ -908,7 +908,7 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
         int mult = mult_ini;
         if(contact2_b)
         {
-          mult = 2;
+          mult = 1;
         }
         joint_values[i] += mult * 0.0174533 ;//gripper_value;
         joint_values[i+2] = -0.61085;
@@ -920,7 +920,7 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
         int mult = mult_ini;
         if(contact3_b)
         {
-          mult = 2;
+          mult = 1;
         }
         joint_values[i] += mult * 0.0174533 ;//gripper_value;
         joint_values[i+2] = -0.61085;
@@ -944,7 +944,7 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
   // ------- Movimiento Extra de Cierre para Apretar el Objeto -------
   for (int i=0;i<joint_values.size(); i++){
     if (i==0 or i==3 or i==6){
-      joint_values[i] = joint_values[i]+0.0174533*1.3;
+      joint_values[i] = joint_values[i]+0.0174533*0.8;
     }
   }   
 
