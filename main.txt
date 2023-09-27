@@ -243,6 +243,18 @@ los objetos que son percibidos como un plano por la cámara RGBD, indicando los 
 resulta imposible. Este último hecho es esperado debido a que la nube de puntos representa parcialmente la forma del
 objeto.
 
+    El problema se ha solucionado al parecer. Los valores de apertura debían ser decimales, es decir, estar en metros, no en
+milímetros, como estaba en un inicio. Esto hace que los rangos se calculen correctamente y no de espacio a valores no válidos
+(como era el caso de los puntos coincidentes). 
+    La pinza de tres dedos funciona como una pinza de dos dedos normal, ya que los dedos conjuntos no permiten ningún tipo de 
+maniobrabilidad, simplemente cierran. Por ello, se ha decidido cerrar hasta que se detecte contacto, con lo que se evitan posibles
+imprecisiones a la hora del cierre debido al movimiento del objeto por un contacto temprano de cada uno de los dedos (la pinza real
+incorpora esta funcionalidad también). Aún así, puede suceder que uno de los dedos no haga contacto con el objeto durante el cierre,
+debido a que el objeto es demasiado pequeño usualmente. 
+    En los objetos que tienen una superficie plana no funciona demasiado bien, ya que los puntos siguen estando encima del objeto,
+lo que imposibilita llevar el robot a esos puntos.
+
+
 ################### COSAS QUE HACER #########
     - Hacer un nodo que traduzca los valores articulares a el rango [0, 255] del pinza de tres dedos y otro que haga la
 operación contraria para comprobar si se puede aplicar la cinemática inversa
