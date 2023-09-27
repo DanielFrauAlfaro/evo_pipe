@@ -49,13 +49,13 @@
     </group_state>
     <group_state name="open" group="gripper">
         <joint name="robotiq_finger_1_joint_1" value="0.0495"/>
-        <joint name="robotiq_finger_1_joint_2" value="0.0495"/>
+        <joint name="robotiq_finger_1_joint_2" value="0.0"/>
         <joint name="robotiq_finger_1_joint_3" value="-0.5847"/>
         <joint name="robotiq_finger_2_joint_1" value="0.0495"/>
-        <joint name="robotiq_finger_2_joint_2" value="0.0495"/>
+        <joint name="robotiq_finger_2_joint_2" value="0.0"/>
         <joint name="robotiq_finger_2_joint_3" value="-0.5847"/>
         <joint name="robotiq_finger_middle_joint_1" value="0.0495"/>
-        <joint name="robotiq_finger_middle_joint_2" value="0.0495"/>
+        <joint name="robotiq_finger_middle_joint_2" value="0.0"/>
         <joint name="robotiq_finger_middle_joint_3" value="-0.5847"/>
     </group_state>
     <group_state name="basic" group="gripper_mode">
