@@ -408,53 +408,6 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
       my_file<<"Final vector 3: "<<vectorZ[0]<<" "<<vectorZ[1]<<" "<<vectorZ[2]<<std::endl;  
       my_file.close();
     }  
-
-    // Axis in mid point
-    /*for(int i=0;i<graspAndMiddlePointsWorldFrame.size()-1;i++){
-
-      visualization_msgs::Marker axis1;
-      axis1.header.frame_id = "base_link";
-      axis1.header.stamp = ros::Time();
-      axis1.id = *identifierMarkerRviz;
-      axis1.type = visualization_msgs::Marker::ARROW;
-      axis1.action = visualization_msgs::Marker::ADD;
-      geometry_msgs::Point p,p1;
-      p.x = graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][0];
-      p.y = graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][1];
-      p.z = graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][2];
-      axis1.points.push_back(p);
-      axis1.scale.x = 0.01;
-      axis1.scale.y = 0.01;
-      axis1.scale.z = 0.01;
-      axis1.color.a = 1.0; // Don't forget to set the alpha!
-      if (i==0){
-        axis1.color.r = 1.0f;
-        p1.x = graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][0]+(dirVectorX[0]);
-        p1.y = graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][1]+(dirVectorX[1]);
-        p1.z = graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][2]+(dirVectorX[2]);
-        axis1.points.push_back(p1);
-      } 
-      else if(i==1){
-        axis1.color.g = 1.0f; 
-        p1.x = graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][0]+(vectorY[0]);
-        p1.y = graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][1]+(vectorY[1]);
-        p1.z = graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][2]+(vectorY[2]);
-        axis1.points.push_back(p1);
-      }
-      else{
-        axis1.color.b = 1.0f;  
-        p1.x = graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][0]+(vectorZ[0]);
-        p1.y = graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][1]+(vectorZ[1]);
-        p1.z = graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][2]+(vectorZ[2]);
-        axis1.points.push_back(p1); 
-      }
- 
-      axis1.lifetime = ros::Duration(1000000);
-
-      vis_pub.publish(axis1);
-      (*markerRvizVector).push_back(axis1);
-      *identifierMarkerRviz = *identifierMarkerRviz + 1;
-    }*/
     
     // Broadcast this axis system as objectAxis
     tf::TransformBroadcaster br;
@@ -483,10 +436,33 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     transformFrames.setOrigin(tf::Vector3(graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][0], graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][1], graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][2]));
     transformFrames.setRotation(qtfDef);    
     
+
+
+    // ----- CAMBIAR ESTO PARA EL CASO REAL ------
+
+    // std::vector<float> mid_point_new = {0.0, 0.0, 0.0}; 
+
+    // for(int i = 0; i<3; i++)
+    // {
+    //   float aux = 0;
+
+    //   for(int j = 0; j<3; j++)
+    //   {
+    //     aux += rotneg45z(i,j) * graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][j];
+        
+    //   }
+
+    //   mid_point_new[i] = aux;
+    //   std::cout<<aux<<"  ";
+    // }
+
+    // std::cout<<"\n";
+
+
     std::thread t1(task1, nh, loop_rate, transformFrames, br);
     
     // Set two points in new axis system and get its position in world
-    tf::Stamped<tf::Point> pointGrasp, pointPreGrasp;
+    tf::Stamped<tf::Point> pointGrasp, pointPreGrasp, aux;
     pointGrasp.setX(-0.21); //-0.22
     pointGrasp.setY(0);
     pointGrasp.setZ(0);
@@ -496,13 +472,21 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     pointPreGrasp.setY(0);
     pointPreGrasp.setZ(0);
     pointPreGrasp.frame_id_ = "objectAxis";
+
+    aux.setX(-0.0);
+    aux.setY(0);
+    aux.setZ(0);
+    aux.frame_id_ = "objectAxis";
     
     tf::TransformListener listener;
     listener.waitForTransform("base_link", "objectAxis", ros::Time(0), ros::Duration(3.0));
     
     Eigen::Vector3d graspingPose = transformPoint(pointGrasp, "objectAxis", "world");
     Eigen::Vector3d preGraspingPose = transformPoint(pointPreGrasp, "objectAxis", "world");
-    
+    Eigen::Vector3d aux2 = transformPoint(aux, "objectAxis", "base_link");
+    // ---------------------------------------------------
+
+
     // Show and save points to future trajectory
     geometry_msgs::Pose desiredGrasp, desiredPreGrasp;
     desiredGrasp.position.x = preGraspingPose[0];
@@ -522,6 +506,11 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     desiredPreGrasp.orientation.z = qtfDef.z();
     desiredPreGrasp.orientation.w = qtfDef.w();
     desiredPoints.push_back(desiredPreGrasp);
+
+  std::cout<<desiredGrasp<<std::endl;
+  std::cout<<desiredPreGrasp<<std::endl;
+  std::cout<<aux2<<std::endl;
+
     
     for(int i=0;i<3;i++){    
     

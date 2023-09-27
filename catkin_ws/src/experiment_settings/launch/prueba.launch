@@ -1,0 +1,9 @@
+<launch>
+
+    <param name="robot_description" command="xacro  '$(find experiment_settings)/urdf/ur5e_sim.xacro'" />
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="true" output="screen" />
+    <node name="joint_state_publisher" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui">
+    </node>
+
+    <node name="rviz" pkg="rviz" type="rviz"/>
+</launch>

@@ -49,13 +49,13 @@
     </group_state>
     <group_state name="open" group="gripper">
         <joint name="robotiq_finger_1_joint_1" value="0.0495"/>
-        <joint name="robotiq_finger_1_joint_2" value="0.0"/>
+        <joint name="robotiq_finger_1_joint_2" value="0"/>
         <joint name="robotiq_finger_1_joint_3" value="-0.5847"/>
         <joint name="robotiq_finger_2_joint_1" value="0.0495"/>
-        <joint name="robotiq_finger_2_joint_2" value="0.0"/>
+        <joint name="robotiq_finger_2_joint_2" value="0"/>
         <joint name="robotiq_finger_2_joint_3" value="-0.5847"/>
         <joint name="robotiq_finger_middle_joint_1" value="0.0495"/>
-        <joint name="robotiq_finger_middle_joint_2" value="0.0"/>
+        <joint name="robotiq_finger_middle_joint_2" value="0"/>
         <joint name="robotiq_finger_middle_joint_3" value="-0.5847"/>
     </group_state>
     <group_state name="basic" group="gripper_mode">
@@ -73,7 +73,7 @@
     <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
     <end_effector name="endeffector" parent_link="ee_link" group="gripper" parent_group="arm"/>
     <!--VIRTUAL JOINT: Purpose: this element defines a virtual joint between a robot link and an external frame of reference (considered fixed with respect to the robot)-->
-    <virtual_joint name="virtual_joint" type="fixed" parent_frame="base_link" child_link="world"/>
+    <virtual_joint name="virtual_joint" type="fixed" parent_frame="base_link" child_link="base_link"/>
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
     <disable_collisions link1="base_link" link2="shoulder_link" reason="Adjacent"/>
     <disable_collisions link1="base_link" link2="ur_gripper" reason="Never"/>

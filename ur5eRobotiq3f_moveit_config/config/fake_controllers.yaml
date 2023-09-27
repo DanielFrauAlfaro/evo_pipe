@@ -11,15 +11,15 @@ controller_list:
   - name: fake_gripper_controller
     type: $(arg fake_execution_type)
     joints:
-      - robotiq_finger_middle_joint_1
-      - robotiq_finger_middle_joint_2
-      - robotiq_finger_middle_joint_3
       - robotiq_finger_1_joint_1
       - robotiq_finger_1_joint_2
       - robotiq_finger_1_joint_3
       - robotiq_finger_2_joint_1
       - robotiq_finger_2_joint_2
       - robotiq_finger_2_joint_3
+      - robotiq_finger_middle_joint_1
+      - robotiq_finger_middle_joint_2
+      - robotiq_finger_middle_joint_3
   - name: fake_gripper_mode_controller
     type: $(arg fake_execution_type)
     joints:
@@ -29,6 +29,6 @@ initial:  # Define initial robot poses per group
   - group: arm
     pose: home
   - group: gripper
-    pose: opened
+    pose: closed
   - group: gripper_mode
     pose: basic
