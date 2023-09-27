@@ -255,6 +255,13 @@ debido a que el objeto es demasiado pequeño usualmente.
 lo que imposibilita llevar el robot a esos puntos.
 
 
+    Para el caso real se tiene que cambiar el método por el que se calcula el punto de agarre, ya que está para que la obtenga 
+del sistema de referencia del objeto directamente, lo que no resulta adecuado. Por lo tanto se tiene que usar el punto medio que
+devuelve Moveit!. De esta manera, el robot irá al punto medio. 
+
+    IMPORTANTE: preguntar a Ignacio si sabe desde donde se toma el sistema de referencia en el caso del Moveit! real. En simulación es
+el link del mundo. En real entiendo que es el base_link, pero por asegurar  
+
 ################### COSAS QUE HACER #########
     - Hacer un nodo que traduzca los valores articulares a el rango [0, 255] del pinza de tres dedos y otro que haga la
 operación contraria para comprobar si se puede aplicar la cinemática inversa
