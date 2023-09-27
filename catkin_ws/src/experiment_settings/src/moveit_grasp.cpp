@@ -315,7 +315,9 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     std::vector<double> new_mid_1 = {(points[1][0] + points[2][0])/2.0, (points[1][1] + points[2][1])/2.0, (points[1][2] + points[2][2])/2.0};
     std::vector<double> new_mid_2 = {(new_mid_1[0] + points[0][0])/2.0, (new_mid_1[1] + points[0][1])/2.0, (new_mid_1[2] + points[0][2])/2.0};
     
-
+    // graspAndMiddlePointsWorldFrame[3][0] = new_mid_2[0];
+    // graspAndMiddlePointsWorldFrame[3][1] = new_mid_2[1];
+    // graspAndMiddlePointsWorldFrame[3][2] = new_mid_2[2];
 
     // Calcula los tres vectores posibles
     std::vector<double> vector1 {points[1][0] - points[0][0], points[1][1] - points[0][1], points[1][2] - points[0][2]};
@@ -393,9 +395,7 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     std::cout<<"Final vector 2: "<<vectorY[0]<<" "<<vectorY[1]<<" "<<vectorY[2]<<std::endl;
     std::cout<<"Final vector 3: "<<vectorZ[0]<<" "<<vectorZ[1]<<" "<<vectorZ[2]<<std::endl;
     
-    // graspAndMiddlePointsWorldFrame[3][0] = new_mid_2[0];
-    // graspAndMiddlePointsWorldFrame[3][1] = new_mid_2[1];
-    // graspAndMiddlePointsWorldFrame[3][2] = new_mid_2[2];
+    
 
     std::fstream my_file;
     my_file.open(saveFilesPath+std::to_string(actualObject)+"_info.txt", std::ios::app);
@@ -908,7 +908,7 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
         int mult = mult_ini;
         if(contact2_b)
         {
-          mult = 1;
+          mult = 2;
         }
         joint_values[i] += mult * 0.0174533 ;//gripper_value;
         joint_values[i+2] = -0.61085;
@@ -920,7 +920,7 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
         int mult = mult_ini;
         if(contact3_b)
         {
-          mult = 1;
+          mult = 2;
         }
         joint_values[i] += mult * 0.0174533 ;//gripper_value;
         joint_values[i+2] = -0.61085;
@@ -930,13 +930,28 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
       //   joint_values[i] = joint_values[i]+0.0174533*5;
       // }
     }
+    
        
     (*move_group_interface_gripper).setJointValueTarget(joint_values);
     (*move_group_interface_gripper).plan(*my_plan_arm);
-    (*move_group_interface_gripper).execute(*my_plan_arm);
+    (*move_group_interface_gripper).execute(*my_plan_arm);  
+  }
 
-         
+  geometry_msgs::PoseStamped curr_pose = (*move_group_interface_gripper).getCurrentPose();
+  std::vector<double> joint_values = (*move_group_interface_gripper).getCurrentJointValues();
+  std::vector<std::string> joint_names = (*move_group_interface_gripper).getJoints();
+
+  // ------- Movimiento Extra de Cierre para Apretar el Objeto -------
+  for (int i=0;i<joint_values.size(); i++){
+    if (i==0 or i==3 or i==6){
+      joint_values[i] = joint_values[i]+0.0174533*1.3;
+    }
   }   
+
+  (*move_group_interface_gripper).setJointValueTarget(joint_values);
+  (*move_group_interface_gripper).plan(*my_plan_arm);
+  (*move_group_interface_gripper).execute(*my_plan_arm); 
+  // ------------------------------------------------------------
 
   std::string aux;
 
