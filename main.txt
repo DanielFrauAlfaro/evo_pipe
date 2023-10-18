@@ -262,11 +262,99 @@ devuelve Moveit!. De esta manera, el robot irá al punto medio.
     IMPORTANTE: preguntar a Ignacio si sabe desde donde se toma el sistema de referencia en el caso del Moveit! real. En simulación es
 el link del mundo. En real entiendo que es el base_link, pero por asegurar  
 
+    DEDUCCIÓN: En real se tiene todo respecto al "base_link", o al menos eso es lo que se usa en el Moveit! que se lanza con el real. Así, entiendo
+que todas las transformaciones que se hacen en simulación respecto al "world" se deberían hacer en real respecto al "base_link".
+
+
+
+
 ################### COSAS QUE HACER #########
-    - Hacer un nodo que traduzca los valores articulares a el rango [0, 255] del pinza de tres dedos y otro que haga la
-operación contraria para comprobar si se puede aplicar la cinemática inversa
-    - Quitar las referencias a "plotvol3" en el fichero transforms3d.py de la librería de la robotictoolbox de Peter 
-Corke para Python que se encuentra en la ubicación de la Docker /usr/local/lib/python3.8/dist-packages/spatialmath/base.
-Sería modificar un fichero equivalente fuera de la docker y al compilarla moverlo dentro con los cambios hechos.
-    Esto solo se podría hacer si no se va a usar el ploteo supongo, asi que hay que tenerlo en cuenta. Poner un 
-PRINT por si se usa en algun momento
+    - Presentación para el Robot2023 - Plantilla Gmail de Ignacio. 
+        - Estructura:
+            - Introducción: establecer el problema, el espacio de trabajo, zonas, herramientas, ...
+            - System Description: esquema de control (imágenes), cálculo de impedancias, interfaz gráfica...
+            - Experiments: imágenes del artículo original
+                - Grasping Results: imágenes del agarre real y en simulación
+                - Data acquisition: gráficas de los datos en simulación y real (alomejor en simulación se puede omitir)
+            - Conclusions and Future Work: hablar de para que se pretenden utilizar los datos generados con la interfaz 
+        
+
+    - Artículo MDPI:
+        - Leerse la plantilla por encima
+        - Crear una copia para tener la plantilla a mano
+        - Cómo enfocar el artículo:
+            - Contribución: interfaz para generar entornos tanto de simulación en Pybullet y Gazebo, asi como conexión con entornos reales
+            para la generación de trayectorias en el ámbito del aprendizaje por refuerzo (o demostración o RLfD).
+
+            - Estructura:
+                - Introducción: introducir el tema y exponer la contribución. Resumir contenido.
+                - Materials and methods:
+                    - Materials: exponer de que equipo se dispone y las plataformas en las que se ha llevado a cabo el desarrollo.
+                    - Methods: hablar de la realimentación de fuerzas, esquema de control (cambiar la imagen), máquina de estados del control, interfaz gráfica, ...
+                    Se podría hablar también de los diferentes nodos y abstracciones que se tienen en cuenta para llevar a cabo el proyecto 
+                    (nodo del Phantom, controlador cartesiano, controlador articular, nodo joint_states, ...) -> posible imagen / esquema
+                - Results: 
+                    - Following Trajectory experiments: gráficas del seguimiento en simulación (ponerlas como si fueran las reales), tabla de los errores (si la puedo sacar), ...
+                    - System Experiments: experimentos para la evaluación del sistema en su conjunto (pruebas de agarre pero con otro nombre)
+                - Discussion: argumentación de porque estos resultados son adecuados para aprendizaje por refuerzo y de que el interfaz
+                permite la generación de entornos con éxito.
+                - Conclusions: (no creo que haga falta, en la Discussion se pone todo) repetir un poco la contribución 
+                - Appendix A: se puede añadir un apéndice para mostrar el análisis de rendimiento
+
+    
+    - GeoGrasp:
+        - Probar la cámara para comprobar el topic y capturar una nube de puntos. 
+        - Hacer la adaptación para hacer los agarres con la pinza de 3 dedos real -> un nodo en Python que reciba la señal de moverse y que 
+        al acabar mande un mensaje al nodo de moveit o simplemente esperar cierto instante o esperar una pulsación del usuario (cin)
+        - Hacer las pruebas con la pinza real para comprobar el funcionamiento del topic de contacto poniendo el dedo o un objeto en medio
+        - Guardar un punto de la simulación y llevar el robot real ahí, a ver si coincide 
+
+        - Pruebas paso a paso:
+            - Captura de la nube de puntos
+            - Procesamiento de GeoGrasp
+            - Visualización de los puntos de agarre
+            - Planificación y ejecución con Moveit!
+            - Agarre con la pinza de tres dedos real 
+
+
+############## IMPORTANTE #################
+    - En el robot real todas las transformaciones se deben realizar respecto al "base_link"
+    - Según las salidas del código, la posición que calcula GeoGrasp aplicándole los giros de 45º que hizo Ignacio coincide con las coordenadas
+    objetivo respecto al "base_link"
+    - El "shoulder_pan_joint" tiene +90º de offset de la simulación al real (pos_sim + 90 = pos_real). Corregir esto.
+    - Mirar a ver al pasarle una de las posiciones cartesianas de la simulación al robot real, va a una posición 
+    correcta o se gira para el lado. De no hacerlo bien, habría que aplicar un giro de 90º en el eje Z a los puntos de 
+    GeoGrasp como última transformación
+
+    - En principio el controlador de la pinza está, junto con la conexion en el nodo de moveit. Lo unico que faltaría
+    sería comprobar si se reciben los mensajes y se envían los comandos. También falta por ver los valores que envía la pinza para
+    los contactos
+
+    - Lanzar la RealSense con el fichero "_mine" que está preparado para lanzar el topic que muestra la point_cloud
+
+
+    - Base sim = Base_real - 90z
+    - Base_link_sim = Base_link_real + 90
+
+
+# VALORES ARTICULARES
+  - elbow_joint
+  - shoulder_lift_joint
+  - shoulder_pan_joint
+  - wrist_1_joint
+  - wrist_2_joint
+  - wrist_3_joint
+position: [-1.7592712844815228, -1.8499740118377472, -1.7844709780170938, -1.1070672640379655, 1.595233735987044, 0.8136376907972962]
+
+
+# VALORES CARTESIANOS
+Position:
+x = 0.263553
+y = 0.485071
+z = 0.0930388 + 0.22
+
+Orientation:
+x = 0.35311
+y = 0.584328
+z = -0.418499
+w = 0.598933
