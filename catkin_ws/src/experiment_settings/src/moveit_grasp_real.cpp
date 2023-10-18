@@ -18,6 +18,7 @@
 #include "std_msgs/Int32.h"
 #include "std_msgs/Float64MultiArray.h"
 #include "std_msgs/Float64.h"
+#include "std_msgs/Int16MultiArray.h"
 #include <tf/tf.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
@@ -33,7 +34,7 @@
 /*#include <unistd.h> */
 
 ros::Subscriber sub;
-bool graspResult, transformReceived, contact, contact1_b, contact2_b, contact3_b, contact1_prev, contact2_prev, contact3_prev;
+bool graspResult, transformReceived, contact, contact_prev, contact1_b, contact2_b, contact3_b, contact1_prev, contact2_prev, contact3_prev;
 experiment_settings::Grasp::ConstPtr graspResultMsg;
 
 void graspResultCallback(const experiment_settings::Grasp::ConstPtr& msg){
@@ -401,52 +402,7 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
       my_file.close();
     }  
 
-    // Axis in mid point
-    /*for(int i=0;i<graspAndMiddlePointsWorldFrame.size()-1;i++){
-
-      visualization_msgs::Marker axis1;
-      axis1.header.frame_id = "base_link";
-      axis1.header.stamp = ros::Time();
-      axis1.id = *identifierMarkerRviz;
-      axis1.type = visualization_msgs::Marker::ARROW;
-      axis1.action = visualization_msgs::Marker::ADD;
-      geometry_msgs::Point p,p1;
-      p.x = graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][0];
-      p.y = graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][1];
-      p.z = graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][2];
-      axis1.points.push_back(p);
-      axis1.scale.x = 0.01;
-      axis1.scale.y = 0.01;
-      axis1.scale.z = 0.01;
-      axis1.color.a = 1.0; // Don't forget to set the alpha!
-      if (i==0){
-        axis1.color.r = 1.0f;
-        p1.x = graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][0]+(dirVectorX[0]);
-        p1.y = graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][1]+(dirVectorX[1]);
-        p1.z = graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][2]+(dirVectorX[2]);
-        axis1.points.push_back(p1);
-      } 
-      else if(i==1){
-        axis1.color.g = 1.0f; 
-        p1.x = graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][0]+(vectorY[0]);
-        p1.y = graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][1]+(vectorY[1]);
-        p1.z = graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][2]+(vectorY[2]);
-        axis1.points.push_back(p1);
-      }
-      else{
-        axis1.color.b = 1.0f;  
-        p1.x = graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][0]+(vectorZ[0]);
-        p1.y = graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][1]+(vectorZ[1]);
-        p1.z = graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][2]+(vectorZ[2]);
-        axis1.points.push_back(p1); 
-      }
- 
-      axis1.lifetime = ros::Duration(1000000);
-
-      vis_pub.publish(axis1);
-      (*markerRvizVector).push_back(axis1);
-      *identifierMarkerRviz = *identifierMarkerRviz + 1;
-    }*/
+    
     
     // Broadcast this axis system as objectAxis
     tf::TransformBroadcaster br;
@@ -467,34 +423,28 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     endLinkY = rotneg45z*endLinkY;
     endLinkZ << vectorZ[0], vectorZ[1], vectorZ[2];
     endLinkZ = rotneg45z*endLinkZ;
+
+
+    // ------ Descomentar en caso de que las posiciones cartesianas en Moveit estén giradas ------
+    // Eigen::Matrix3d rotpos90z;
+    // rotpos90z << cos(90*M_PI/180), -sin(90*M_PI/180), 0, sin(90*M_PI/180), cos(90*M_PI/180), 0, 0, 0, 1;
+    // endLinkX = rotpos90z * endLinkX;
+    // endLinkY = rotpos90z * endLinkY;
+    // endLinkZ = rotpos90z * endLinkZ;
     
     matAux << endLinkX[0], endLinkY[0], endLinkZ[0], endLinkX[1], endLinkY[1], endLinkZ[1], endLinkX[2], endLinkY[2], endLinkZ[2];
     Eigen::Quaterniond qtfAux(matAux);
     tf::Quaternion qtfDef(qtfAux.x(), qtfAux.y(), qtfAux.z(), qtfAux.w()); 
+        
     
-    transformFrames.setOrigin(tf::Vector3(graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][0], graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][1], graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][2]));
-    transformFrames.setRotation(qtfDef);    
+    // IMPORTANTE: ajustar el valor del offset para que llegue a la posicion deseada, en una prueba se vio que se acercaba demasiado a la mesa
+    float offset_grasping = 0.22;
+    float offset_preGrasping = 0.35;
+
+    Eigen::Vector3d graspingPose(graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][0], graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][1], graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][2] + offset_grasping);
+    Eigen::Vector3d preGraspingPose(graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][0], graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][1], graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][2] + offset_preGrasping);
     
-    std::thread t1(task1, nh, loop_rate, transformFrames, br);
-    
-    // Set two points in new axis system and get its position in world
-    tf::Stamped<tf::Point> pointGrasp, pointPreGrasp;
-    pointGrasp.setX(-0.20);
-    pointGrasp.setY(0);
-    pointGrasp.setZ(0);
-    pointGrasp.frame_id_ = "objectAxis";
-    
-    pointPreGrasp.setX(-0.35);
-    pointPreGrasp.setY(0);
-    pointPreGrasp.setZ(0);
-    pointPreGrasp.frame_id_ = "objectAxis";
-    
-    tf::TransformListener listener;
-    listener.waitForTransform("base_link", "objectAxis", ros::Time(0), ros::Duration(3.0));
-    
-    Eigen::Vector3d graspingPose = transformPoint(pointGrasp, "objectAxis", "world");
-    Eigen::Vector3d preGraspingPose = transformPoint(pointPreGrasp, "objectAxis", "world");
-    
+
     // Show and save points to future trajectory
     geometry_msgs::Pose desiredGrasp, desiredPreGrasp;
     desiredGrasp.position.x = preGraspingPose[0];
@@ -518,7 +468,7 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     for(int i=0;i<3;i++){    
     
       visualization_msgs::Marker axis1;
-      axis1.header.frame_id = "world";
+      axis1.header.frame_id = "base_link";
       axis1.header.stamp = ros::Time();
       axis1.id = *identifierMarkerRviz;
       axis1.type = visualization_msgs::Marker::ARROW;
@@ -564,7 +514,7 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     for(int i=0;i<3;i++){    
     
       visualization_msgs::Marker axis1;
-      axis1.header.frame_id = "world";
+      axis1.header.frame_id = "base_link";
       axis1.header.stamp = ros::Time();
       axis1.id = *identifierMarkerRviz;
       axis1.type = visualization_msgs::Marker::ARROW;
@@ -608,7 +558,7 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     }
     
     // Move to that poses we said before
-    (*move_group_interface_arm).setPlanningTime(20.0);
+    (*move_group_interface_arm).setPlanningTime(10.0);
     (*move_group_interface_arm).setGoalTolerance(0.005);
     std::cout << "MOVE TO 'PRE_GRASP' POSITION" << std::endl;
 
@@ -695,137 +645,42 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
       }
     }
 
-    // if(*inputChar == 'n'){
-    //   std::cout<<"Trying with one end point"<<std::endl;
-    //   std::cout<<"Creating client ..."<<std::endl;
-    //   actionlib::SimpleActionClient<experiment_settings::IKAction>act("ik_server", true);
-      
-    //   std::cout<<"Waiting for server ..."<<std::endl;
-    //   act.waitForServer();
 
-    //   experiment_settings::IKGoal goal;
-    //   goal.pose = desiredPoints[0];
-
-    //   std::cout<<"Sending goal ..."<<std::endl;
-    //   act.sendGoal(goal);
-
-    //   std::cout<<"Waiting for result ..."<<std::endl;
-    //   act.waitForResult();
-
-    //   *inputChar = ' ';
-    // }
-  
-    //std::this_thread::sleep_for(std::chrono::seconds(2));  
-    
-    //std::cout << "MOVE TO 'GRASP' POSITION" << std::endl;
-    
-    // std::vector<geometry_msgs::Pose> waypoints;
-    // waypoints.push_back(desiredPoints[0]);
-    
-    // moveit_msgs::RobotTrajectory trajectory;
-
-    // do{
-      
-    //   const double jump_threshold = 0.0;
-    //   const double eef_step = 0.01;
-    //   double fraction = (*move_group_interface_arm).computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory);
-      
-    //   // std::cout<<"#######################\n#####################\n";
-    //   // std::cout<<"PLANNING PREV\n";
-    //   // std::cout<<"#######################\n#####################\n";
-    //   // (*move_group_interface_arm).setPoseTarget(desiredPoints[0]);
-    //   // std::cout << "Preparing trajectory..." << std::endl;
-    //   // (*move_group_interface_arm).plan(*my_plan_arm);
-    //   // std::cout<<"#######################\n#####################\n";
-    //   // std::cout<<"PLANNING PREV\n";
-    //   // std::cout<<"#######################\n#####################\n";
-
-    //   std::cout << "Insert 'n' to compute a new trajectory" << std::endl;
-    //   std::cout << "Insert 's' to save this trajectory" << std::endl;
-    //   std::cout << "Insert other letter to escape" << std::endl;
-    //   std::cin >> inputChar;
-    // } while(inputChar == 'n');
-
-    // if(inputChar == 's'){
-    //   std::cout << "Executing the trajectory..." << std::endl;
-    //   //(*move_group_interface_arm).execute(*my_plan_arm);
-    //   (*move_group_interface_arm).execute(trajectory);
-    // }
-  
-    // std::this_thread::sleep_for(std::chrono::seconds(2));  
-    
-    // std::cout << "MOVE TO 'GRASP' POSITION" << std::endl;
-    // inputChar = 'n';
-
-    // std::vector<geometry_msgs::Pose> waypoints_;
-    // waypoints_.push_back(desiredPoints[1]);
-    // moveit_msgs::RobotTrajectory trajectory_;
-
-    // do{
-    //   const double jump_threshold = 0.0;
-    //   const double eef_step = 0.01;
-    //   double fraction = (*move_group_interface_arm).computeCartesianPath(waypoints_, eef_step, jump_threshold, trajectory_);
-      
-    //   // (*move_group_interface_arm).plan(*my_plan_arm);
-    //   // std::cout<<"#######################\n#####################\n";
-    //   // std::cout<<"PLANNING PREV\n";
-    //   // std::cout<<"#######################\n#####################\n";
-    //   // (*move_group_interface_arm).setPoseTarget(desiredPoints[1]);
-    //   // std::cout << "Preparing trajectory..." << std::endl;
-    //   // (*move_group_interface_arm).plan(*my_plan_arm);
-    //   // (*move_group_interface_arm).plan(*my_plan_arm);
-    //   // std::cout<<"#######################\n#####################\n";
-    //   // std::cout<<"PLANNING PREV\n";
-    //   // std::cout<<"#######################\n#####################\n";
-
-    //   std::cout << "Insert 'n' to compute a new trajectory" << std::endl;
-    //   std::cout << "Insert 's' to save this trajectory" << std::endl;
-    //   std::cout << "Insert other letter to escape" << std::endl;
-    //   std::cin >> inputChar;
-    // } while(inputChar == 'n');
-
-    // if(inputChar == 's'){
-    //   std::cout << "Executing the trajectory..." << std::endl;
-    //   //(*move_group_interface_arm).execute(*my_plan_arm);
-    //   (*move_group_interface_arm).execute(trajectory_);
-    // }
-  
     std::this_thread::sleep_for(std::chrono::seconds(2));   
-    
-    // Rejoin programs
-    transformReceived = true;
-    t1.join();
+        
 }
 
-void contactCallback(const gazebo_msgs::ContactsStateConstPtr &contact1, const gazebo_msgs::ContactsStateConstPtr &contact2, const gazebo_msgs::ContactsStateConstPtr &contactMiddle){  
-  if (contact1->states.size() != 0){
+void contact_cb(const std_msgs::Int16MultiArray::ConstPtr& msg)
+{
+  
+  // Finger A
+  if(msg->data[0] == 1)
+  {
     contact1_b = true;
+    std::cout<<"Contacto A"<<std::endl;
+    
   }
-  else{
+  else
+  {
     contact1_b = false;
-    contact1_prev = false;
   }
-  
-  if (contact2->states.size() != 0){
+
+  // Finger B
+  if(msg->data[1] == 1)
+  {
     contact2_b = true;
+    std::cout<<"Contacto B"<<std::endl;
+    
   }
-  else{
+  else
+  {
     contact2_b = false;
-    contact2_prev = false;
   }
-  
-  if (contactMiddle->states.size() != 0){
-    contact3_b = true;
-  }
-  else{
-    contact3_b = false;
-    contact3_prev = false;
-  }
-  if (contact1->states.size() != 0 and contact2->states.size() != 0 and contactMiddle->states.size() != 0){
-    if(contact1_prev and contact2_prev and contact3_prev)
-    {
-      contact = true;
-    }
+
+  // All fingers
+  if(contact1_b && contact2_b)
+  {
+    contact = true;
   }
 }
 
@@ -833,87 +688,58 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
 
   // Subscribe to sensor contact messages
   contact = false;
+  contact_prev = false;
   contact1_b = false;
   contact2_b = false;
   contact3_b = false;
   contact1_prev = false;
   contact2_prev = false;
   contact3_prev = false;
-  message_filters::Subscriber<gazebo_msgs::ContactsState> finger1Contact(nh, "/aurova/robotiq_finger_1_link_3_contact_sensor", 10);
-  message_filters::Subscriber<gazebo_msgs::ContactsState> finger2Contact(nh, "/aurova/robotiq_finger_2_link_3_contact_sensor", 10);
-  message_filters::Subscriber<gazebo_msgs::ContactsState> fingerMiddleContact(nh, "/aurova/robotiq_finger_middle_link_3_contact_sensor", 10);
-    
-  typedef message_filters::sync_policies::ApproximateTime<gazebo_msgs::ContactsState, gazebo_msgs::ContactsState, gazebo_msgs::ContactsState> MySyncPolicy;
-  message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), finger1Contact, finger2Contact, fingerMiddleContact);
-  sync.registerCallback(boost::bind(&contactCallback, _1, _2, _3));
-    
+  
+  ros::Subscriber sub = nh.subscribe("/aurova/contacts_gripper", 10, contact_cb);
+  ros::Publisher pub_3f = nh.advertise<std_msgs::Int32>("/aurova/grip_cmd", 10); 
+
+  std_msgs::Float64 msg_3f; 
+
+  std::this_thread::sleep_for(std::chrono::seconds(3));    
+
+  int mult_ini = 2;
+  std_msgs::Int32 value_3f;
+  value_3f.data = 0;
+  
+
   // Close gripper until collision
   std::cout << "GRASPING OBJECT" << std::endl;
-  while(contact == false){
-    
-    std_msgs::Float64MultiArray joint_values;
-    joint_values.data = {0.0495, 0.0495, 0.0495};
-
-    int mult_ini = 2;  
-    
-    for (int i=0;i<joint_values.data.size(); i++){
-      if(i == 0 and not contact1_prev)
-      {
-        int mult = mult_ini;
-        if(contact1_b)
-        {
-          mult = 1;
-        }
-        joint_values.data[i] = joint_values.data[i]+0.0174533*mult;
-        //joint_values.data[i+2] = -0.61085;
-        contact1_prev = contact1_b;
-      }
-
-      else if(i == 1 and not contact2_prev)
-      {
-        int mult = mult_ini;
-        if(contact2_b)
-        {
-          mult = 1;
-        }
-        joint_values.data[i] = joint_values.data[i]+0.0174533*mult;
-        //joint_values.data[i+2] = -0.61085;
-        contact2_prev = contact2_b;
-      }
-
-      else if(i == 2 and not contact3_prev)
-      {
-        int mult = mult_ini;
-        if(contact3_b)
-        {
-          mult = 1;
-        }
-        joint_values.data[i] = joint_values.data[i]+0.0174533*mult;
-        //joint_values.data[i+2] = -0.61085;
-        contact3_prev = contact3_b;
-      }
-      // if (i==0 or i==3 or i==6){
-      //   joint_values[i] = joint_values[i]+0.0174533*5;
-      // }
+  while(contact_prev == false){
+    int mult = mult_ini;
+    if(contact)
+    {
+      mult = mult_ini/2;
     }
 
-    // TODO: aqui va la pubicación de los valores de la pinza de tres dedos
-    ros::Publisher pub_cmd = nh.advertise<std_msgs::Float64>("/aurova/grip_cmd", 1);
+    value_3f.data += mult;
+    
+    for(int i = 0; i < 5; i++)
+    {
+      pub_3f.publish(value_3f);
+    }
 
-    //std_msgs::Float64
-    
-    std::this_thread::sleep_for(std::chrono::seconds(3));       
+    contact_prev = contact;
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));       
   }   
-    
-  if (contact == true){
-    finger1Contact.unsubscribe();
-    finger2Contact.unsubscribe();
-    fingerMiddleContact.unsubscribe();                
+
+  value_3f.data += mult_ini / 2; 
+
+  for(int i = 0; i < 5; i++)
+  {
+    pub_3f.publish(value_3f);
   }
-  
+
+  sub.shutdown();
 }
 
-void armUpAndReset(moveit::planning_interface::MoveGroupInterface *move_group_interface_arm, moveit::planning_interface::MoveGroupInterface::Plan *my_plan_arm, std::string saveFilesPath, int actualObject, int identifierMarkerRviz, ros::Publisher vis_pub, std::vector<visualization_msgs::Marker> *markerRvizVector){
+void armUpAndReset(moveit::planning_interface::MoveGroupInterface *move_group_interface_arm, moveit::planning_interface::MoveGroupInterface::Plan *my_plan_arm, std::string saveFilesPath, int actualObject, int identifierMarkerRviz, ros::Publisher vis_pub, std::vector<visualization_msgs::Marker> *markerRvizVector, ros::NodeHandle nh){
 
   (*move_group_interface_arm).setPlanningTime(5.0);
   (*move_group_interface_arm).setGoalTolerance(0.0001);
@@ -965,14 +791,17 @@ void armUpAndReset(moveit::planning_interface::MoveGroupInterface *move_group_in
   } while(decision == false);
     
 
-  // TODO: cambiar esto
-  // (*move_group_interface_gripper).setPlanningTime(5.0);
-  // (*move_group_interface_gripper).setGoalTolerance(0.0001);
-  // std::cout << "MOVE TO 'RESET' POSITION" << std::endl;
+  // Devuelve a la pinza a su posicion por defecto
+  ros::Publisher pub_3f = nh.advertise<std_msgs::Int32>("/aurova/grip_cmd", 10); 
 
-  // (*move_group_interface_gripper).setJointValueTarget((*move_group_interface_gripper).getNamedTargetValues("open"));
-  // (*move_group_interface_gripper).plan(*my_plan_arm);
-  // (*move_group_interface_gripper).execute(*my_plan_arm); 
+  std_msgs::Int32 value_3f;
+  value_3f.data = 0;
+
+  for(int i = 0; i < 5; i++)
+  {
+    pub_3f.publish(value_3f);
+  }
+  
   
   std::this_thread::sleep_for(std::chrono::seconds(2));
   
@@ -1064,7 +893,7 @@ int main(int argc, char *argv[]){
     }
 
     // Arm up to check if object is grasped and prepare everything for next test
-    armUpAndReset(&move_group_interface_arm, &my_plan_arm, saveFilesPath, actualObject, identifierMarkerRviz, vis_pub, &markerRvizVector);
+    armUpAndReset(&move_group_interface_arm, &my_plan_arm, saveFilesPath, actualObject, identifierMarkerRviz, vis_pub, &markerRvizVector, nh);
     
     // Advertise we have finished
     ros::Publisher finished_pub = nh.advertise<std_msgs::Int32>("/aurova/moveit_grasp_finished", 1);
