@@ -414,7 +414,7 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     std::vector<Eigen::Vector3d> pointWorld;
     tf::Transform transformFrames;
     tf::Quaternion qM;    
-    Eigen::Matrix3d matAux;
+    Eigen::Matrix3d matAux, matAux_;
     
     transformReceived = false;
     
@@ -423,10 +423,31 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     rotneg45z << cos(-45*M_PI/180), -sin(-45*M_PI/180), 0, sin(-45*M_PI/180), cos(-45*M_PI/180), 0, 0, 0, 1;
     Eigen::Vector3d endLinkX, endLinkY, endLinkZ;
     endLinkX << dirVectorX[0], dirVectorX[1], dirVectorX[2];
-    endLinkX = rotneg45z*endLinkX;
     endLinkY << vectorY[0], vectorY[1], vectorY[2];
-    endLinkY = rotneg45z*endLinkY;
     endLinkZ << vectorZ[0], vectorZ[1], vectorZ[2];
+
+    Eigen::Matrix3d rotpos90z;
+    rotpos90z << cos(180*M_PI/180), -sin(180*M_PI/180), 0, sin(180*M_PI/180), cos(180*M_PI/180), 0, 0, 0, 1;
+    endLinkX = rotpos90z * endLinkX;
+    endLinkY = rotpos90z * endLinkY;
+    endLinkZ = rotpos90z * endLinkZ;
+
+    matAux_ << endLinkX[0], endLinkY[0], endLinkZ[0], endLinkX[1], endLinkY[1], endLinkZ[1], endLinkX[2], endLinkY[2], endLinkZ[2];
+    Eigen::Quaterniond qtfAux_(matAux_);
+
+    
+
+    std::cout<<"\n\n\n AAAAAAAAAAAAAAAAAa"<<std::endl;
+    std::cout<<qtfAux_.x()<<std::endl;
+    std::cout<<qtfAux_.y()<<std::endl;
+    std::cout<<qtfAux_.z()<<std::endl;
+    std::cout<<qtfAux_.w()<<std::endl;
+    std::cout<<"\n\n\nAAAAAAAAAAAAAAAAaAAA"<<std::endl;
+
+    endLinkX = rotneg45z*endLinkX;
+    
+    endLinkY = rotneg45z*endLinkY;
+    
     endLinkZ = rotneg45z*endLinkZ;
     
     matAux << endLinkX[0], endLinkY[0], endLinkZ[0], endLinkX[1], endLinkY[1], endLinkZ[1], endLinkX[2], endLinkY[2], endLinkZ[2];
@@ -434,12 +455,26 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     tf::Quaternion qtfDef(qtfAux.x(), qtfAux.y(), qtfAux.z(), qtfAux.w()); 
     
     transformFrames.setOrigin(tf::Vector3(graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][0], graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][1], graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][2]));
-    transformFrames.setRotation(qtfDef);    
+    transformFrames.setRotation(qtfDef);   
+
+    std::cout<<"\n\n\n AAAAAAAAAAAAAAAAAa"<<std::endl;
+    std::cout<<qtfAux.x()<<std::endl;
+    std::cout<<qtfAux.y()<<std::endl;
+    std::cout<<qtfAux.z()<<std::endl;
+    std::cout<<qtfAux.w()<<std::endl;
+    std::cout<<"\n\n\nAAAAAAAAAAAAAAAAaAAA"<<std::endl;
+
+    // std::cout<<"\n\n\nAAAAAAAAAAAAAAAAAAAAAAAAAAa"<<std::endl;
+    // std::cout<<qtfDef_.x()<<std::endl;
+    // std::cout<<qtfDef_.y()<<std::endl;
+    // std::cout<<qtfDef_.z()<<std::endl;
+    // std::cout<<qtfDef_.w()<<std::endl;
+    // std::cout<<"AAAAAAAAAAAAAAAAAAAAAAAAAAA\n\n\n"<<std::endl;
     
-
-
+    
     // ----- CAMBIAR ESTO PARA EL CASO REAL ------
-
+    //  !!!!!!!!!!!!!!!!!!!!! USAR EL PUNTO MEDIO QUE DEVUELVE GEOGRASP !!!!!!!!!!!!!!!!!!!!!!!
+    
     // std::vector<float> mid_point_new = {0.0, 0.0, 0.0}; 
 
     // for(int i = 0; i<3; i++)
@@ -463,7 +498,7 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     
     // Set two points in new axis system and get its position in world
     tf::Stamped<tf::Point> pointGrasp, pointPreGrasp, aux;
-    pointGrasp.setX(-0.21); //-0.22
+    pointGrasp.setX(-0.22); //-0.22
     pointGrasp.setY(0);
     pointGrasp.setZ(0);
     pointGrasp.frame_id_ = "objectAxis";
@@ -486,6 +521,10 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     Eigen::Vector3d aux2 = transformPoint(aux, "objectAxis", "base_link");
     // ---------------------------------------------------
 
+    cout<<"PointGrasp: "<<pointGrasp<<std::endl;
+    cout<<"PointPreGrasp: "<<pointPreGrasp<<std::endl;
+    cout<<"graspAndMiddlePoints: "<<graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1]<<std::endl;   
+
 
     // Show and save points to future trajectory
     geometry_msgs::Pose desiredGrasp, desiredPreGrasp;
@@ -507,9 +546,14 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     desiredPreGrasp.orientation.w = qtfDef.w();
     desiredPoints.push_back(desiredPreGrasp);
 
-  std::cout<<desiredGrasp<<std::endl;
-  std::cout<<desiredPreGrasp<<std::endl;
-  std::cout<<aux2<<std::endl;
+    std::cout<<desiredGrasp<<std::endl;
+    std::cout<<desiredPreGrasp<<std::endl;
+    std::cout<<aux2<<std::endl;
+    std::cout<<qtfDef.x()<<std::endl;
+    std::cout<<qtfDef.y()<<std::endl;
+    std::cout<<qtfDef.z()<<std::endl;
+    std::cout<<qtfDef.w()<<std::endl;
+
 
     
     for(int i=0;i<3;i++){    
