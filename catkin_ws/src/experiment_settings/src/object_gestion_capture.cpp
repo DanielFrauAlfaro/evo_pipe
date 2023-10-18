@@ -219,10 +219,23 @@ int main(int argc, char *argv[]){
             }  
           }
           
+
+          std::string name_color_raw = "/camera/color/image_raw";
+          std::string name_depth_raw = "/camera/depth/image_raw";
+          std::string name_depth_points = "/camera/depth/color/points";
+
+          // TODO: poner aqui los nombres de los topics de la camara real
+          if(mode == "real")
+          {
+            name_color_raw = "/camera/color/image_raw";
+            name_depth_raw = "/camera/depth/image_rect_raw";
+            name_depth_points = "/camera/depth/color/points";
+          }
           
-          sub1 = nh.subscribe("/camera/color/image_raw", 1, captureRGBCallback);
-          sub2 = nh.subscribe("/camera/depth/image_raw", 1, captureDCallback);
-          sub3 = nh.subscribe("/camera/depth/color/points", 1, capturePCCallback);
+
+          sub1 = nh.subscribe(name_color_raw, 1, captureRGBCallback);
+          sub2 = nh.subscribe(name_depth_raw, 1, captureDCallback);
+          sub3 = nh.subscribe(name_depth_points, 1, capturePCCallback);
           capturedRGB = false, capturedD = false, capturedPC = false;
           while ((capturedRGB != true) or (capturedD != true) or (capturedPC != true)){
             ros::spinOnce();  
