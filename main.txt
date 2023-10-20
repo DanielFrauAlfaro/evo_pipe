@@ -337,24 +337,15 @@ que todas las transformaciones que se hacen en simulación respecto al "world" s
     - Base_link_sim = Base_link_real + 90
 
 
-# VALORES ARTICULARES
-  - elbow_joint
-  - shoulder_lift_joint
-  - shoulder_pan_joint
-  - wrist_1_joint
-  - wrist_2_joint
-  - wrist_3_joint
-position: [-1.7592712844815228, -1.8499740118377472, -1.7844709780170938, -1.1070672640379655, 1.595233735987044, 0.8136376907972962]
-
-
-# VALORES CARTESIANOS
-Position:
-x = 0.263553
-y = 0.485071
-z = 0.0930388 + 0.22
-
-Orientation:
-x = 0.35311
-y = 0.584328
-z = -0.418499
-w = 0.598933
+    - Se ha modificado el modelo del robot con la pinza de tres dedos en simulación para que coincida con el real. Habían varios problemas asociados a este
+    cambio.
+        - El "objectAxis" NO es el sistema de referencia (frame) del objeto que saca Gazebo al importarlo, sino que es un sistema de referencia ficticio
+        creado a partir de los puntos de agarre, por lo que es correcto en simulación y real
+        - Se han cambiado todas las transformaciones respecto al "base_link" (antes estaban con el "world") para que coincidan con el robot real (en real no
+        hay "world"). Por ello, se debe cambiar el origen del planificador desde el "world" (lo coge Moveit por defecto) al nuevo "base_link"
+        - Al cambiar el "base_link" al del original del UR5e, se observó que no se pintaban correctamente los Markers y se intercambiaban los ejes X y Z en
+        el extremo del robot, lo que provocaba que el robot se acercara al objeto de lado. Para corregir esto se rotó el sistema de orientación 90º según
+        el eje Y positivo del sistema de referencia formado por los puntos de geograsp (o lo que es lo mismo: Z = X   X = -Z). También se cambió el incremento
+        a la hora de pintar los markers para que coindidieran las direcciones en el sistema de coordenadas del "base_link". Finalmente, se añadió una rotación
+        de 45º según el eje positivo Z (antes era negativa pero con el cambio de "world" a "base_link" se añaden 180º) para hacer coincidir el sistema de referencia
+        de geoGrasp con el de Moveit
