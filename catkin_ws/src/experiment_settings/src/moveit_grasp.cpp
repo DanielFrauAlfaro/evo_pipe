@@ -259,8 +259,8 @@ void task1(ros::NodeHandle nh, ros::Rate loop_rate, tf::Transform transformFrame
     
   while(nh.ok() && transformReceived==false){
     br.sendTransform(tf::StampedTransform(transformFrames, ros::Time::now(), "base_link", "objectAxis")); 
-    /*br.sendTransform(tf::StampedTransform(transformFrames[1], ros::Time::now(), "world", "robotiq_finger_2_halfLink"));
-    br.sendTransform(tf::StampedTransform(transformFrames[2], ros::Time::now(), "world", "robotiq_finger_middle_halfLink")); */
+    /*br.sendTransform(tf::StampedTransform(transformFrames[1], ros::Time::now(), "base_link", "robotiq_finger_2_halfLink"));
+    br.sendTransform(tf::StampedTransform(transformFrames[2], ros::Time::now(), "base_link", "robotiq_finger_middle_halfLink")); */
     
     ros::spinOnce();   
     loop_rate.sleep(); 
@@ -287,7 +287,7 @@ void task1(ros::NodeHandle nh, ros::Rate loop_rate, tf::Transform transformFrame
       point1.frame_id_ = "robotiq_finger_middle_halfLink";
     }
     
-    singlePointWorld = transformPoint(point1, point1.frame_id_, "world"); 
+    singlePointWorld = transformPoint(point1, point1.frame_id_, "base_link"); 
     (*pointWorld).push_back(singlePointWorld);   
     std::cout<<"Point "<<i<<point1<<" and new is "<<singlePointWorld<<std::endl;   
   }      
@@ -334,9 +334,9 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     mod2 = round(mod2 * 10000) / 10000.0;
     mod3 = round(mod3 * 10000) / 10000.0;
 
-    // std::cout<<"V1: "<<vector1[0]<<" "<<vector1[1]<<" "<<vector1[2]<<std::endl;
-    // std::cout<<"V2: "<<vector2[0]<<" "<<vector2[1]<<" "<<vector2[2]<<std::endl;
-    // std::cout<<"V3: "<<vector3[0]<<" "<<vector3[1]<<" "<<vector3[2]<<std::endl<<std::endl<<std::endl;
+    std::cout<<"V1: "<<vector1[0]<<" "<<vector1[1]<<" "<<vector1[2]<<std::endl;
+    std::cout<<"V2: "<<vector2[0]<<" "<<vector2[1]<<" "<<vector2[2]<<std::endl;
+    std::cout<<"V3: "<<vector3[0]<<" "<<vector3[1]<<" "<<vector3[2]<<std::endl<<std::endl<<std::endl;
 
     // std::cout<<"MOD 1: "<<mod1<<std::endl;
     // std::cout<<"MOD 2: "<<mod2<<std::endl;
@@ -345,11 +345,11 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     
 
 
-    std::vector<double> dirVectorX {vector1[1]*vector2[2] - vector1[2]*vector2[1], vector1[2]*vector2[0] - vector1[0]*vector2[2], vector2[1]*vector1[0] - vector2[0]*vector1[1]};
-    if(dirVectorX[2] > 0){
-      dirVectorX[0] = dirVectorX[0] * -1;
-      dirVectorX[1] = dirVectorX[1] * -1;
-      dirVectorX[2] = dirVectorX[2] * -1;
+    std::vector<double> vectorX {vector1[1]*vector2[2] - vector1[2]*vector2[1], vector1[2]*vector2[0] - vector1[0]*vector2[2], vector2[1]*vector1[0] - vector2[0]*vector1[1]};
+    if(vectorX[2] > 0){
+      vectorX[0] = vectorX[0] * -1;
+      vectorX[1] = vectorX[1] * -1;
+      vectorX[2] = vectorX[2] * -1;
     }
 
     
@@ -367,31 +367,31 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     //   la vertical del objeto como vector normal al plano
     if(mod1 == 0 or mod2 == 0 or mod3 == 0)
     {
-      dirVectorX[0] = 0;
-      dirVectorX[1] = 0;
-      dirVectorX[2] = -1;
+      vectorX[0] = 0;
+      vectorX[1] = 0;
+      vectorX[2] = -1;
 
       vectorY[2] = 0;
     }
 
-    std::vector<double> vectorZ {dirVectorX[1]*vectorY[2]-vectorY[1]*dirVectorX[2], dirVectorX[2]*vectorY[0]-dirVectorX[0]*vectorY[2], dirVectorX[0]*vectorY[1]-vectorY[0]*dirVectorX[1]};
+    std::vector<double> vectorZ {vectorX[1]*vectorY[2]-vectorY[1]*vectorX[2], vectorX[2]*vectorY[0]-vectorX[0]*vectorY[2], vectorX[0]*vectorY[1]-vectorY[0]*vectorX[1]};
     
     //std::cout<<"Final vector: "<<vectorZ[0]<<" "<<vectorZ[1]<<" "<<vectorZ[2]<<std::endl;
     
     double modX, modY, modZ;
-    modX = sqrt(dirVectorX[0]*dirVectorX[0]+dirVectorX[1]*dirVectorX[1]+dirVectorX[2]*dirVectorX[2]);
+    modX = sqrt(vectorX[0]*vectorX[0]+vectorX[1]*vectorX[1]+vectorX[2]*vectorX[2]);
     modY = sqrt(vectorY[0]*vectorY[0]+vectorY[1]*vectorY[1]+vectorY[2]*vectorY[2]);
     modZ = sqrt(vectorZ[0]*vectorZ[0]+vectorZ[1]*vectorZ[1]+vectorZ[2]*vectorZ[2]);
     
     for(int i=0;i<3; i++){
-      dirVectorX [i]=  dirVectorX[i]/modX;
+      vectorX [i]=  vectorX[i]/modX;
       vectorY [i]=  vectorY[i]/modY;
       vectorZ [i]=  vectorZ[i]/modZ;
     }
 
     
 
-    std::cout<<"Final vector 1: "<<dirVectorX[0]<<" "<<dirVectorX[1]<<" "<<dirVectorX[2]<<std::endl;
+    std::cout<<"Final vector 1: "<<vectorX[0]<<" "<<vectorX[1]<<" "<<vectorX[2]<<std::endl;
     std::cout<<"Final vector 2: "<<vectorY[0]<<" "<<vectorY[1]<<" "<<vectorY[2]<<std::endl;
     std::cout<<"Final vector 3: "<<vectorZ[0]<<" "<<vectorZ[1]<<" "<<vectorZ[2]<<std::endl;
     
@@ -403,7 +403,7 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
       ROS_INFO("ERROR: file was not created.");
     }
     else{
-      my_file<<"Final vector 1: "<<dirVectorX[0]<<" "<<dirVectorX[1]<<" "<<dirVectorX[2]<<std::endl; 
+      my_file<<"Final vector 1: "<<vectorX[0]<<" "<<vectorX[1]<<" "<<vectorX[2]<<std::endl; 
       my_file<<"Final vector 2: "<<vectorY[0]<<" "<<vectorY[1]<<" "<<vectorY[2]<<std::endl;
       my_file<<"Final vector 3: "<<vectorZ[0]<<" "<<vectorZ[1]<<" "<<vectorZ[2]<<std::endl;  
       my_file.close();
@@ -420,17 +420,29 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     
     // We have a bias of +45 in x respect to objectAxis. Respect to base_link is in z -45
     Eigen::Matrix3d rotneg45z;
-    rotneg45z << cos(-45*M_PI/180), -sin(-45*M_PI/180), 0, sin(-45*M_PI/180), cos(-45*M_PI/180), 0, 0, 0, 1;
+    rotneg45z << cos(45*M_PI/180), -sin(45*M_PI/180), 0, sin(45*M_PI/180), cos(45*M_PI/180), 0, 0, 0, 1;
     Eigen::Vector3d endLinkX, endLinkY, endLinkZ;
-    endLinkX << dirVectorX[0], dirVectorX[1], dirVectorX[2];
+    endLinkX << -vectorZ[0], -vectorZ[1], -vectorZ[2];
     endLinkY << vectorY[0], vectorY[1], vectorY[2];
-    endLinkZ << vectorZ[0], vectorZ[1], vectorZ[2];
+    endLinkZ << vectorX[0], vectorX[1], vectorX[2];
 
-    Eigen::Matrix3d rotpos90z;
+    Eigen::Matrix3d rotpos90z, rotpos90y;
     rotpos90z << cos(180*M_PI/180), -sin(180*M_PI/180), 0, sin(180*M_PI/180), cos(180*M_PI/180), 0, 0, 0, 1;
-    endLinkX = rotpos90z * endLinkX;
-    endLinkY = rotpos90z * endLinkY;
-    endLinkZ = rotpos90z * endLinkZ;
+    rotpos90y << cos(90*M_PI/180), 0, sin(90*M_PI/180), 0, 1, 0, -sin(90*M_PI/180), 0, cos(90*M_PI/180);
+    // endLinkX = rotpos90z * endLinkX;
+    // endLinkY = rotpos90z * endLinkY;
+    // endLinkZ = rotpos90z * endLinkZ;
+
+    // endLinkX = rotpos90y * endLinkX;
+    // endLinkY = rotpos90y * endLinkY;
+    // endLinkZ = rotpos90y * endLinkZ;
+
+    // auto endLinkX_aux = endLinkX;
+    // endLinkX = endLinkZ;
+    // endLinkZ = endLinkX_aux;
+
+
+
 
     matAux_ << endLinkX[0], endLinkY[0], endLinkZ[0], endLinkX[1], endLinkY[1], endLinkZ[1], endLinkX[2], endLinkY[2], endLinkZ[2];
     Eigen::Quaterniond qtfAux_(matAux_);
@@ -445,12 +457,12 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     std::cout<<"\n\n\nAAAAAAAAAAAAAAAAaAAA"<<std::endl;
 
     endLinkX = rotneg45z*endLinkX;
-    
     endLinkY = rotneg45z*endLinkY;
-    
     endLinkZ = rotneg45z*endLinkZ;
-    
     matAux << endLinkX[0], endLinkY[0], endLinkZ[0], endLinkX[1], endLinkY[1], endLinkZ[1], endLinkX[2], endLinkY[2], endLinkZ[2];
+
+
+
     Eigen::Quaterniond qtfAux(matAux);
     tf::Quaternion qtfDef(qtfAux.x(), qtfAux.y(), qtfAux.z(), qtfAux.w()); 
     
@@ -464,67 +476,45 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     std::cout<<qtfAux.w()<<std::endl;
     std::cout<<"\n\n\nAAAAAAAAAAAAAAAAaAAA"<<std::endl;
 
-    // std::cout<<"\n\n\nAAAAAAAAAAAAAAAAAAAAAAAAAAa"<<std::endl;
-    // std::cout<<qtfDef_.x()<<std::endl;
-    // std::cout<<qtfDef_.y()<<std::endl;
-    // std::cout<<qtfDef_.z()<<std::endl;
-    // std::cout<<qtfDef_.w()<<std::endl;
-    // std::cout<<"AAAAAAAAAAAAAAAAAAAAAAAAAAA\n\n\n"<<std::endl;
-    
-    
-    // ----- CAMBIAR ESTO PARA EL CASO REAL ------
-    //  !!!!!!!!!!!!!!!!!!!!! USAR EL PUNTO MEDIO QUE DEVUELVE GEOGRASP !!!!!!!!!!!!!!!!!!!!!!!
-    
-    // std::vector<float> mid_point_new = {0.0, 0.0, 0.0}; 
-
-    // for(int i = 0; i<3; i++)
-    // {
-    //   float aux = 0;
-
-    //   for(int j = 0; j<3; j++)
-    //   {
-    //     aux += rotneg45z(i,j) * graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][j];
-        
-    //   }
-
-    //   mid_point_new[i] = aux;
-    //   std::cout<<aux<<"  ";
-    // }
-
-    // std::cout<<"\n";
-
 
     std::thread t1(task1, nh, loop_rate, transformFrames, br);
     
     // Set two points in new axis system and get its position in world
     tf::Stamped<tf::Point> pointGrasp, pointPreGrasp, aux;
-    pointGrasp.setX(-0.22); //-0.22
+    pointGrasp.setX(-0.0); //-0.22
     pointGrasp.setY(0);
-    pointGrasp.setZ(0);
+    pointGrasp.setZ(-0.22);
     pointGrasp.frame_id_ = "objectAxis";
     
-    pointPreGrasp.setX(-0.35);
+    pointPreGrasp.setX(-0.0);
     pointPreGrasp.setY(0);
-    pointPreGrasp.setZ(0);
+    pointPreGrasp.setZ(-0.35);
     pointPreGrasp.frame_id_ = "objectAxis";
 
-    aux.setX(-0.0);
-    aux.setY(0);
-    aux.setZ(0);
-    aux.frame_id_ = "objectAxis";
     
     tf::TransformListener listener;
     listener.waitForTransform("base_link", "objectAxis", ros::Time(0), ros::Duration(3.0));
     
-    Eigen::Vector3d graspingPose = transformPoint(pointGrasp, "objectAxis", "world");
-    Eigen::Vector3d preGraspingPose = transformPoint(pointPreGrasp, "objectAxis", "world");
-    Eigen::Vector3d aux2 = transformPoint(aux, "objectAxis", "base_link");
-    // ---------------------------------------------------
+    Eigen::Vector3d graspingPose = transformPoint(pointGrasp, "objectAxis", "base_link");
+    Eigen::Vector3d preGraspingPose = transformPoint(pointPreGrasp, "objectAxis", "base_link");
 
-    cout<<"PointGrasp: "<<pointGrasp<<std::endl;
-    cout<<"PointPreGrasp: "<<pointPreGrasp<<std::endl;
-    cout<<"graspAndMiddlePoints: "<<graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1]<<std::endl;   
+    // // ---------------------------------------------------
 
+    // cout<<"PointGrasp: "<<pointGrasp<<std::endl;
+    // cout<<"PointPreGrasp: "<<pointPreGrasp<<std::endl;
+    // cout<<"graspAndMiddlePoints: "<<graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1]<<std::endl;   
+
+
+    // IMPORTANTE: ajustar el valor del offset para que llegue a la posicion deseada, en una prueba se vio que se acercaba demasiado a la mesa
+    // float offset_grasping = 0.22;
+    // float offset_preGrasping = 0.35;
+
+    // Eigen::Vector3d graspingPose(graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][0], graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][1], graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][2] );
+    // Eigen::Vector3d preGraspingPose(graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][0], graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][1], graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][2] + 0.22);
+    
+    std::cout<<"\n\n\nREFERENCE FRAME \n\n";
+    std::cout<<move_group_interface_arm->getPoseReferenceFrame()<<"\n\n\n";
+    move_group_interface_arm->setPoseReferenceFrame("base_link");
 
     // Show and save points to future trajectory
     geometry_msgs::Pose desiredGrasp, desiredPreGrasp;
@@ -546,20 +536,21 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     desiredPreGrasp.orientation.w = qtfDef.w();
     desiredPoints.push_back(desiredPreGrasp);
 
+    
     std::cout<<desiredGrasp<<std::endl;
     std::cout<<desiredPreGrasp<<std::endl;
-    std::cout<<aux2<<std::endl;
-    std::cout<<qtfDef.x()<<std::endl;
-    std::cout<<qtfDef.y()<<std::endl;
-    std::cout<<qtfDef.z()<<std::endl;
-    std::cout<<qtfDef.w()<<std::endl;
+
+    // std::cout<<qtfDef.x()<<std::endl;
+    // std::cout<<qtfDef.y()<<std::endl;
+    // std::cout<<qtfDef.z()<<std::endl;
+    // std::cout<<qtfDef.w()<<std::endl;
 
 
     
     for(int i=0;i<3;i++){    
     
       visualization_msgs::Marker axis1;
-      axis1.header.frame_id = "world";
+      axis1.header.frame_id = "base_link";
       axis1.header.stamp = ros::Time();
       axis1.id = *identifierMarkerRviz;
       axis1.type = visualization_msgs::Marker::ARROW;
@@ -575,9 +566,9 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
       axis1.color.a = 1.0; // Don't forget to set the alpha!
       if (i==0){
         axis1.color.r = 1.0f;
-        p1.x = preGraspingPose[0]+(endLinkX[0]);
-        p1.y = preGraspingPose[1]+(endLinkX[1]);
-        p1.z = preGraspingPose[2]+(endLinkX[2]);
+        p1.x = preGraspingPose[0]+(endLinkZ[0]);
+        p1.y = preGraspingPose[1]+(endLinkZ[1]);
+        p1.z = preGraspingPose[2]+(endLinkZ[2]);
         axis1.points.push_back(p1);
       } 
       else if(i==1){
@@ -589,9 +580,9 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
       }
       else{
         axis1.color.b = 1.0f;  
-        p1.x = preGraspingPose[0]+(endLinkZ[0]);
-        p1.y = preGraspingPose[1]+(endLinkZ[1]);
-        p1.z = preGraspingPose[2]+(endLinkZ[2]);
+        p1.x = preGraspingPose[0]+(endLinkX[0]);
+        p1.y = preGraspingPose[1]+(endLinkX[1]);
+        p1.z = preGraspingPose[2]+(endLinkX[2]);
         axis1.points.push_back(p1); 
       }
  
@@ -605,7 +596,7 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     for(int i=0;i<3;i++){    
     
       visualization_msgs::Marker axis1;
-      axis1.header.frame_id = "world";
+      axis1.header.frame_id = "base_link";
       axis1.header.stamp = ros::Time();
       axis1.id = *identifierMarkerRviz;
       axis1.type = visualization_msgs::Marker::ARROW;
@@ -621,9 +612,9 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
       axis1.color.a = 1.0; // Don't forget to set the alpha!
       if (i==0){
         axis1.color.r = 1.0f;
-        p1.x = graspingPose[0]+(endLinkX[0]);
-        p1.y = graspingPose[1]+(endLinkX[1]);
-        p1.z = graspingPose[2]+(endLinkX[2]);
+        p1.x = graspingPose[0]+(endLinkZ[0]);
+        p1.y = graspingPose[1]+(endLinkZ[1]);
+        p1.z = graspingPose[2]+(endLinkZ[2]);
         axis1.points.push_back(p1);
       } 
       else if(i==1){
@@ -635,9 +626,9 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
       }
       else{
         axis1.color.b = 1.0f;  
-        p1.x = graspingPose[0]+(endLinkZ[0]);
-        p1.y = graspingPose[1]+(endLinkZ[1]);
-        p1.z = graspingPose[2]+(endLinkZ[2]);
+        p1.x = graspingPose[0]+(endLinkX[0]);
+        p1.y = graspingPose[1]+(endLinkX[1]);
+        p1.z = graspingPose[2]+(endLinkX[2]);
         axis1.points.push_back(p1); 
       }
  
@@ -653,44 +644,27 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     (*move_group_interface_arm).setGoalTolerance(0.005);
     std::cout << "MOVE TO 'PRE_GRASP' POSITION" << std::endl;
 
-    // Cálculo de las distancias entre los tres puntos
-    std::vector<double> mid12 = {(points[1][0] + points[2][0])/2.0, (points[1][1] + points[2][1])/2.0, (points[1][2] + points[2][2])/2.0};
 
-    float dist = sqrt(pow(mid12[0] - points[0][0],2) + pow(mid12[1] - points[0][1], 2) + pow(mid12[2] - points[0][2],2));
 
-    int g = abs(dist * 105 / 0.155 - 105);
-    float m1 = 1.2218 /  140.0;
-
-    *gripper_value = m1*g;
-
-    std::cout<<"\n\n\n";
-    for(int i = 0; i<3;i++)
-    {
-      std::cout<<mid12[i]<<"  ";
-    }
-    std::cout<<"\n\n\n";
-    std::cout<<"\n\n\n"<<dist<<"\n\n\n";
-    std::cout<<"\n\n\n"<<g<<"\n\n\n";
-    std::cout<<"\n\n\n"<<*gripper_value<<"\n\n\n";
 
     std::vector<geometry_msgs::Pose> waypoints;
     waypoints.push_back(desiredPoints[0]);
     waypoints.push_back(desiredPoints[1]);
     moveit_msgs::RobotTrajectory trajectory;
 
-    do{
+    // do{
       
-      const double jump_threshold = 0.0;
-      const double eef_step = 0.001;
+    //   const double jump_threshold = 0.0;
+    //   const double eef_step = 0.001;
 
-      std::cout<<"Computing Cartesian Trajectory..."<<std::endl;
-      double fraction = (*move_group_interface_arm).computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory);
+    //   std::cout<<"Computing Cartesian Trajectory..."<<std::endl;
+    //   double fraction = (*move_group_interface_arm).computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory);
     
-      std::cout << "Insert 'n' to compute a new trajectory" << std::endl;
-      std::cout << "Insert 's' to save this trajectory" << std::endl;
-      std::cout << "Insert other letter to escape" << std::endl;
-      std::cin >> *inputChar;
-    } while(*inputChar != 'n' and *inputChar != 's');
+    //   std::cout << "Insert 'n' to compute a new trajectory" << std::endl;
+    //   std::cout << "Insert 's' to save this trajectory" << std::endl;
+    //   std::cout << "Insert other letter to escape" << std::endl;
+    //   std::cin >> *inputChar;
+    // } while(*inputChar != 'n' and *inputChar != 's');
 
     if(*inputChar == 's'){
       std::cout << "Executing the trajectory..." << std::endl;
@@ -754,101 +728,6 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
         }     
       }
     }
-
-    // if(*inputChar == 'n'){
-    //   std::cout<<"Trying with one end point"<<std::endl;
-    //   std::cout<<"Creating client ..."<<std::endl;
-    //   actionlib::SimpleActionClient<experiment_settings::IKAction>act("ik_server", true);
-      
-    //   std::cout<<"Waiting for server ..."<<std::endl;
-    //   act.waitForServer();
-
-    //   experiment_settings::IKGoal goal;
-    //   goal.pose = desiredPoints[0];
-
-    //   std::cout<<"Sending goal ..."<<std::endl;
-    //   act.sendGoal(goal);
-
-    //   std::cout<<"Waiting for result ..."<<std::endl;
-    //   act.waitForResult();
-
-    //   *inputChar = ' ';
-    // }
-  
-    //std::this_thread::sleep_for(std::chrono::seconds(2));  
-    
-    //std::cout << "MOVE TO 'GRASP' POSITION" << std::endl;
-    
-    // std::vector<geometry_msgs::Pose> waypoints;
-    // waypoints.push_back(desiredPoints[0]);
-    
-    // moveit_msgs::RobotTrajectory trajectory;
-
-    // do{
-      
-    //   const double jump_threshold = 0.0;
-    //   const double eef_step = 0.01;
-    //   double fraction = (*move_group_interface_arm).computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory);
-      
-    //   // std::cout<<"#######################\n#####################\n";
-    //   // std::cout<<"PLANNING PREV\n";
-    //   // std::cout<<"#######################\n#####################\n";
-    //   // (*move_group_interface_arm).setPoseTarget(desiredPoints[0]);
-    //   // std::cout << "Preparing trajectory..." << std::endl;
-    //   // (*move_group_interface_arm).plan(*my_plan_arm);
-    //   // std::cout<<"#######################\n#####################\n";
-    //   // std::cout<<"PLANNING PREV\n";
-    //   // std::cout<<"#######################\n#####################\n";
-
-    //   std::cout << "Insert 'n' to compute a new trajectory" << std::endl;
-    //   std::cout << "Insert 's' to save this trajectory" << std::endl;
-    //   std::cout << "Insert other letter to escape" << std::endl;
-    //   std::cin >> inputChar;
-    // } while(inputChar == 'n');
-
-    // if(inputChar == 's'){
-    //   std::cout << "Executing the trajectory..." << std::endl;
-    //   //(*move_group_interface_arm).execute(*my_plan_arm);
-    //   (*move_group_interface_arm).execute(trajectory);
-    // }
-  
-    // std::this_thread::sleep_for(std::chrono::seconds(2));  
-    
-    // std::cout << "MOVE TO 'GRASP' POSITION" << std::endl;
-    // inputChar = 'n';
-
-    // std::vector<geometry_msgs::Pose> waypoints_;
-    // waypoints_.push_back(desiredPoints[1]);
-    // moveit_msgs::RobotTrajectory trajectory_;
-
-    // do{
-    //   const double jump_threshold = 0.0;
-    //   const double eef_step = 0.01;
-    //   double fraction = (*move_group_interface_arm).computeCartesianPath(waypoints_, eef_step, jump_threshold, trajectory_);
-      
-    //   // (*move_group_interface_arm).plan(*my_plan_arm);
-    //   // std::cout<<"#######################\n#####################\n";
-    //   // std::cout<<"PLANNING PREV\n";
-    //   // std::cout<<"#######################\n#####################\n";
-    //   // (*move_group_interface_arm).setPoseTarget(desiredPoints[1]);
-    //   // std::cout << "Preparing trajectory..." << std::endl;
-    //   // (*move_group_interface_arm).plan(*my_plan_arm);
-    //   // (*move_group_interface_arm).plan(*my_plan_arm);
-    //   // std::cout<<"#######################\n#####################\n";
-    //   // std::cout<<"PLANNING PREV\n";
-    //   // std::cout<<"#######################\n#####################\n";
-
-    //   std::cout << "Insert 'n' to compute a new trajectory" << std::endl;
-    //   std::cout << "Insert 's' to save this trajectory" << std::endl;
-    //   std::cout << "Insert other letter to escape" << std::endl;
-    //   std::cin >> inputChar;
-    // } while(inputChar == 'n');
-
-    // if(inputChar == 's'){
-    //   std::cout << "Executing the trajectory..." << std::endl;
-    //   //(*move_group_interface_arm).execute(*my_plan_arm);
-    //   (*move_group_interface_arm).execute(trajectory_);
-    // }
   
     std::this_thread::sleep_for(std::chrono::seconds(2));   
     
@@ -921,7 +800,7 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
     std::vector<double> joint_values = (*move_group_interface_gripper).getCurrentJointValues();
     std::vector<std::string> joint_names = (*move_group_interface_gripper).getJoints();
 
-    int mult_ini = 3;  
+    int mult_ini = 4;  
     
     for (int i=0;i<joint_values.size(); i++){
       if(i == 0 and not contact1_prev)
@@ -929,7 +808,7 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
         int mult = mult_ini;
         if(contact1_b)
         {
-          mult = 1;
+          mult = 2;
         }
         joint_values[i] += mult * 0.0174533 ;//gripper_value;
         joint_values[i+2] = -0.61085;
@@ -941,7 +820,7 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
         int mult = mult_ini;
         if(contact2_b)
         {
-          mult = 1;
+          mult = 2;
         }
         joint_values[i] += mult * 0.0174533 ;//gripper_value;
         joint_values[i+2] = -0.61085;
@@ -953,7 +832,7 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
         int mult = mult_ini;
         if(contact3_b)
         {
-          mult = 1;
+          mult = 2;
         }
         joint_values[i] += mult * 0.0174533 ;//gripper_value;
         joint_values[i+2] = -0.61085;
@@ -977,7 +856,7 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
   // ------- Movimiento Extra de Cierre para Apretar el Objeto -------
   for (int i=0;i<joint_values.size(); i++){
     if (i==0 or i==3 or i==6){
-      joint_values[i] = joint_values[i]+0.0174533*0.8;
+      joint_values[i] = joint_values[i]+0.0174533*0.9;
     }
   }   
 
