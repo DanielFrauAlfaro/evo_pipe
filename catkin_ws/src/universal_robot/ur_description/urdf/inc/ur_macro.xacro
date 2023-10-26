@@ -332,5 +332,157 @@
       <parent link="${prefix}flange"/>
       <child link="${prefix}tool0"/>
     </joint>
+
+  
+
+
+
+
+  <!-- AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA -->
+
+  <link name="ee_link"/>
+  <joint name="tool0_ee_link" type="fixed">
+    <parent link="tool0"/>
+    <child link="ee_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+
+  
+ 
+  <material name="camera_aluminum">
+    <color rgba="0.5 0.5 0.5 1"/>
+  </material>
+
+  
+  <link name="camera_link">
+    <visual>
+      <origin rpy="1.5707963267948966 0 1.5707963267948966" xyz="0.0149 -0.0175 0"/>
+      <geometry>
+
+        <mesh filename="package://experiment_settings/meshes/d435_sim.dae"/>
+
+      </geometry>
+      <material name="camera_aluminum"/>
+    </visual>
+    
+    
+    <inertial>
+
+      <mass value="0.564"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0.003881243" ixy="0.0" ixz="0.0" iyy="0.000498940" iyz="0.0" izz="0.003879257"/>
+    </inertial>
+  </link>
+
+  <joint name="camera_depth_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="camera_link"/>
+    <child link="camera_depth_frame"/>
+  </joint>
+  <link name="camera_depth_frame"/>
+  <joint name="camera_depth_optical_joint" type="fixed">
+    <origin rpy="-1.5707963267948966 0 -1.5707963267948966" xyz="0 0 0"/>
+    <parent link="camera_depth_frame"/>
+    <child link="camera_depth_optical_frame"/>
+  </joint>
+  <link name="camera_depth_optical_frame"/>
+
+  <joint name="camera_left_ir_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0.0 0"/>
+    <parent link="camera_depth_frame"/>
+    <child link="camera_left_ir_frame"/>
+  </joint>
+  <link name="camera_left_ir_frame"/>
+  <joint name="camera_left_ir_optical_joint" type="fixed">
+    <origin rpy="-1.5707963267948966 0 -1.5707963267948966" xyz="0 0 0"/>
+    <parent link="camera_left_ir_frame"/>
+    <child link="camera_left_ir_optical_frame"/>
+  </joint>
+  <link name="camera_left_ir_optical_frame"/>
+
+  <joint name="camera_right_ir_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0 -0.05 0"/>
+    <parent link="camera_depth_frame"/>
+    <child link="camera_right_ir_frame"/>
+  </joint>
+  <link name="camera_right_ir_frame"/>
+  <joint name="camera_right_ir_optical_joint" type="fixed">
+    <origin rpy="-1.5707963267948966 0 -1.5707963267948966" xyz="0 0 0"/>
+    <parent link="camera_right_ir_frame"/>
+    <child link="camera_right_ir_optical_frame"/>
+  </joint>
+  <link name="camera_right_ir_optical_frame"/>
+
+  <joint name="camera_color_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0.015 0"/>
+    <parent link="camera_depth_frame"/>
+    <child link="camera_color_frame"/>
+  </joint>
+  <link name="camera_color_frame"/>
+  <joint name="camera_color_optical_joint" type="fixed">
+    <origin rpy="-1.5707963267948966 0 -1.5707963267948966" xyz="0 0 0"/>
+    <parent link="camera_color_frame"/>
+    <child link="camera_color_optical_frame"/>
+  </joint>
+  <link name="camera_color_optical_frame"/>
+
+
+
+ 
+
+  <material name="grey">
+    <color rgba="0.6627 0.6627 0.6627 1.0"/>
+  </material>
+  <material name="black">
+    <color rgba="0.0 0.0 0.0 1.0"/>
+  </material>
+
+  
+  
+  <link name="ur_gripper">
+    <visual>
+      <geometry>
+        <mesh filename="package://experiment_settings/stl/ur_gripper.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="grey"/>
+    </visual>
+    
+    
+            <inertial>
+            <mass value="0.1" />
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <inertia ixx="0.03" iyy="0.03" izz="0.03" ixy="0.0" ixz="0.0" iyz="0.0" />
+        </inertial>
+  </link>
+  
+  
+
+
+
+
+  <joint name="camera_joint" type="fixed">
+    <origin rpy="3.1414 0.0 1.5707" xyz="0.055 0.015 0.03"/>
+
+    <parent link="ur_gripper"/>
+    <child link="camera_bottom_screw_frame"/>
+  </joint>
+  <link name="camera_bottom_screw_frame"/>
+  <joint name="camera_link_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0.0175 0.0125"/>
+
+    <parent link="camera_bottom_screw_frame"/>
+    <child link="camera_link"/>
+  </joint>
+  <joint name="ur_gripper_joint" type="fixed">
+    <parent link="wrist_3_link"/>
+    <child link="ur_gripper"/>
+
+    <origin rpy="1.57 -0.0 -0.785" xyz="0.08423 0.161 -0.0"/>
+  </joint>
+
+
+
+
   </xacro:macro>
 </robot>
