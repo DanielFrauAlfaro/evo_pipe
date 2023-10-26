@@ -28,9 +28,13 @@ def input_cb(data):
     msg.data = np.array([0, 0])
 
     if data.gDTA == 1:
+        print("Colision: A")
         msg.data[0] = 1
     if data.gDTC == 1:
+        print("Colision: C")
         msg.data[1] == 1
+    if data.gSTA == 1:
+        print("AAA")
 
     pub_cmd[1].publish(msg)
     
