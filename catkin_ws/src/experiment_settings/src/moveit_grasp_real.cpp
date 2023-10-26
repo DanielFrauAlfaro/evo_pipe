@@ -409,41 +409,107 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     std::vector<Eigen::Vector3d> pointWorld;
     tf::Transform transformFrames;
     tf::Quaternion qM;    
-    Eigen::Matrix3d matAux;
+    Eigen::Matrix3d matAux, matAux_;
     
     transformReceived = false;
     
     // We have a bias of +45 in x respect to objectAxis. Respect to base_link is in z -45
     Eigen::Matrix3d rotneg45z;
-    rotneg45z << cos(-45*M_PI/180), -sin(-45*M_PI/180), 0, sin(-45*M_PI/180), cos(-45*M_PI/180), 0, 0, 0, 1;
+    rotneg45z << cos(45*M_PI/180), -sin(45*M_PI/180), 0, sin(45*M_PI/180), cos(45*M_PI/180), 0, 0, 0, 1;
     Eigen::Vector3d endLinkX, endLinkY, endLinkZ;
-    endLinkX << dirVectorX[0], dirVectorX[1], dirVectorX[2];
-    endLinkX = rotneg45z*endLinkX;
+    endLinkX << -vectorZ[0], -vectorZ[1], -vectorZ[2];
     endLinkY << vectorY[0], vectorY[1], vectorY[2];
-    endLinkY = rotneg45z*endLinkY;
-    endLinkZ << vectorZ[0], vectorZ[1], vectorZ[2];
-    endLinkZ = rotneg45z*endLinkZ;
+    endLinkZ << vectorX[0], vectorX[1], vectorX[2];
 
-
-    // ------ Descomentar en caso de que las posiciones cartesianas en Moveit estén giradas ------
-    // Eigen::Matrix3d rotpos90z;
-    // rotpos90z << cos(90*M_PI/180), -sin(90*M_PI/180), 0, sin(90*M_PI/180), cos(90*M_PI/180), 0, 0, 0, 1;
+    Eigen::Matrix3d rotpos90z, rotpos90y;
+    rotpos90z << cos(180*M_PI/180), -sin(180*M_PI/180), 0, sin(180*M_PI/180), cos(180*M_PI/180), 0, 0, 0, 1;
+    rotpos90y << cos(90*M_PI/180), 0, sin(90*M_PI/180), 0, 1, 0, -sin(90*M_PI/180), 0, cos(90*M_PI/180);
     // endLinkX = rotpos90z * endLinkX;
     // endLinkY = rotpos90z * endLinkY;
     // endLinkZ = rotpos90z * endLinkZ;
+
+    // endLinkX = rotpos90y * endLinkX;
+    // endLinkY = rotpos90y * endLinkY;
+    // endLinkZ = rotpos90y * endLinkZ;
+
+    // auto endLinkX_aux = endLinkX;
+    // endLinkX = endLinkZ;
+    // endLinkZ = endLinkX_aux;
+
+
+
+
+    matAux_ << endLinkX[0], endLinkY[0], endLinkZ[0], endLinkX[1], endLinkY[1], endLinkZ[1], endLinkX[2], endLinkY[2], endLinkZ[2];
+    Eigen::Quaterniond qtfAux_(matAux_);
+
     
+
+    std::cout<<"\n\n\n AAAAAAAAAAAAAAAAAa"<<std::endl;
+    std::cout<<qtfAux_.x()<<std::endl;
+    std::cout<<qtfAux_.y()<<std::endl;
+    std::cout<<qtfAux_.z()<<std::endl;
+    std::cout<<qtfAux_.w()<<std::endl;
+    std::cout<<"\n\n\nAAAAAAAAAAAAAAAAaAAA"<<std::endl;
+
+    endLinkX = rotneg45z*endLinkX;
+    endLinkY = rotneg45z*endLinkY;
+    endLinkZ = rotneg45z*endLinkZ;
     matAux << endLinkX[0], endLinkY[0], endLinkZ[0], endLinkX[1], endLinkY[1], endLinkZ[1], endLinkX[2], endLinkY[2], endLinkZ[2];
+
+
+
     Eigen::Quaterniond qtfAux(matAux);
     tf::Quaternion qtfDef(qtfAux.x(), qtfAux.y(), qtfAux.z(), qtfAux.w()); 
-        
     
-    // IMPORTANTE: ajustar el valor del offset para que llegue a la posicion deseada, en una prueba se vio que se acercaba demasiado a la mesa
-    float offset_grasping = 0.22;
-    float offset_preGrasping = 0.35;
+    transformFrames.setOrigin(tf::Vector3(graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][0], graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][1], graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][2]));
+    transformFrames.setRotation(qtfDef);   
 
-    Eigen::Vector3d graspingPose(graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][0], graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][1], graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][2] + offset_grasping);
-    Eigen::Vector3d preGraspingPose(graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][0], graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][1], graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][2] + offset_preGrasping);
+    std::cout<<"\n\n\n AAAAAAAAAAAAAAAAAa"<<std::endl;
+    std::cout<<qtfAux.x()<<std::endl;
+    std::cout<<qtfAux.y()<<std::endl;
+    std::cout<<qtfAux.z()<<std::endl;
+    std::cout<<qtfAux.w()<<std::endl;
+    std::cout<<"\n\n\nAAAAAAAAAAAAAAAAaAAA"<<std::endl;
+
+
+    std::thread t1(task1, nh, loop_rate, transformFrames, br);
     
+    // Set two points in new axis system and get its position in world
+    tf::Stamped<tf::Point> pointGrasp, pointPreGrasp, aux;
+    pointGrasp.setX(-0.0); //-0.22 --> se cambia un poco mas arriba para que no choque con la mesa en el real
+    pointGrasp.setY(0);
+    pointGrasp.setZ(-0.25);
+    pointGrasp.frame_id_ = "objectAxis";
+    
+    pointPreGrasp.setX(-0.0);
+    pointPreGrasp.setY(0);
+    pointPreGrasp.setZ(-0.35);
+    pointPreGrasp.frame_id_ = "objectAxis";
+
+    
+    tf::TransformListener listener;
+    listener.waitForTransform("base_link", "objectAxis", ros::Time(0), ros::Duration(3.0));
+    
+    Eigen::Vector3d graspingPose = transformPoint(pointGrasp, "objectAxis", "base_link");
+    Eigen::Vector3d preGraspingPose = transformPoint(pointPreGrasp, "objectAxis", "base_link");
+
+    // // ---------------------------------------------------
+
+    // cout<<"PointGrasp: "<<pointGrasp<<std::endl;
+    // cout<<"PointPreGrasp: "<<pointPreGrasp<<std::endl;
+    // cout<<"graspAndMiddlePoints: "<<graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1]<<std::endl;   
+
+
+    // IMPORTANTE: ajustar el valor del offset para que llegue a la posicion deseada, en una prueba se vio que se acercaba demasiado a la mesa
+    // float offset_grasping = 0.22;
+    // float offset_preGrasping = 0.35;
+
+    // Eigen::Vector3d graspingPose(graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][0], graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][1], graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][2] );
+    // Eigen::Vector3d preGraspingPose(graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][0], graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][1], graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][2] + 0.22);
+    
+    std::cout<<"\n\n\nREFERENCE FRAME \n\n";
+    std::cout<<move_group_interface_arm->getPoseReferenceFrame()<<"\n\n\n";
+    move_group_interface_arm->setPoseReferenceFrame("base_link");
 
     // Show and save points to future trajectory
     geometry_msgs::Pose desiredGrasp, desiredPreGrasp;
@@ -464,6 +530,7 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     desiredPreGrasp.orientation.z = qtfDef.z();
     desiredPreGrasp.orientation.w = qtfDef.w();
     desiredPoints.push_back(desiredPreGrasp);
+
     
     for(int i=0;i<3;i++){    
     
@@ -484,9 +551,9 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
       axis1.color.a = 1.0; // Don't forget to set the alpha!
       if (i==0){
         axis1.color.r = 1.0f;
-        p1.x = preGraspingPose[0]+(endLinkX[0]);
-        p1.y = preGraspingPose[1]+(endLinkX[1]);
-        p1.z = preGraspingPose[2]+(endLinkX[2]);
+        p1.x = preGraspingPose[0]+(endLinkZ[0]);
+        p1.y = preGraspingPose[1]+(endLinkZ[1]);
+        p1.z = preGraspingPose[2]+(endLinkZ[2]);
         axis1.points.push_back(p1);
       } 
       else if(i==1){
@@ -498,9 +565,9 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
       }
       else{
         axis1.color.b = 1.0f;  
-        p1.x = preGraspingPose[0]+(endLinkZ[0]);
-        p1.y = preGraspingPose[1]+(endLinkZ[1]);
-        p1.z = preGraspingPose[2]+(endLinkZ[2]);
+        p1.x = preGraspingPose[0]+(endLinkX[0]);
+        p1.y = preGraspingPose[1]+(endLinkX[1]);
+        p1.z = preGraspingPose[2]+(endLinkX[2]);
         axis1.points.push_back(p1); 
       }
  
@@ -530,9 +597,9 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
       axis1.color.a = 1.0; // Don't forget to set the alpha!
       if (i==0){
         axis1.color.r = 1.0f;
-        p1.x = graspingPose[0]+(endLinkX[0]);
-        p1.y = graspingPose[1]+(endLinkX[1]);
-        p1.z = graspingPose[2]+(endLinkX[2]);
+        p1.x = graspingPose[0]+(endLinkZ[0]);
+        p1.y = graspingPose[1]+(endLinkZ[1]);
+        p1.z = graspingPose[2]+(endLinkZ[2]);
         axis1.points.push_back(p1);
       } 
       else if(i==1){
@@ -544,9 +611,9 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
       }
       else{
         axis1.color.b = 1.0f;  
-        p1.x = graspingPose[0]+(endLinkZ[0]);
-        p1.y = graspingPose[1]+(endLinkZ[1]);
-        p1.z = graspingPose[2]+(endLinkZ[2]);
+        p1.x = graspingPose[0]+(endLinkX[0]);
+        p1.y = graspingPose[1]+(endLinkX[1]);
+        p1.z = graspingPose[2]+(endLinkX[2]);
         axis1.points.push_back(p1); 
       }
  

@@ -169,7 +169,37 @@ void drawDataRviz(GraspEvoContacts contacts, GraspEvoPose pose, ros::Publisher v
   point1.setY(pose.midPointPose.translation().y());
   point1.setZ(pose.midPointPose.translation().z());
   point1.frame_id_ = "camera_depth_optical_frame";
-  Eigen::Vector3d pointWorld1 = transformPoint(point1, "camera_depth_optical_frame", "base_link");
+
+
+  tf::Stamped<tf::Point> point_baseX;
+  point_baseX.setX(1.0);
+  point_baseX.setY(0.0);
+  point_baseX.setZ(0.0);
+  point_baseX.frame_id_ = "camera_depth_optical_frame";
+  tf::Stamped<tf::Point> point_baseY;
+  point_baseY.setX(0.0);
+  point_baseY.setY(1.0);
+  point_baseY.setZ(0.0);
+  point_baseY.frame_id_ = "camera_depth_optical_frame";
+  tf::Stamped<tf::Point> point_baseZ;
+  point_baseZ.setX(0.0);
+  point_baseZ.setY(0.0);
+  point_baseZ.setZ(1.0);
+  point_baseZ.frame_id_ = "camera_depth_optical_frame";
+  
+// Transformadas de [[1, 0, 0], [0, 1, 0], [0, 0, 1]] en el "optical_depth_frame" a "base_link"
+// 0.492294
+// 0.288742
+// 0.497312
+
+// -0.507597
+// -0.710832
+// 0.463157
+
+// -0.472495
+// 0.288763
+// -0.536636
+  
   visualization_msgs::Marker marker1;
   marker1.header.frame_id = "base_link";
   marker1.header.stamp = ros::Time();
