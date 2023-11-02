@@ -340,11 +340,11 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     
 
 
-    std::vector<double> dirVectorX {vector1[1]*vector2[2] - vector1[2]*vector2[1], vector1[2]*vector2[0] - vector1[0]*vector2[2], vector2[1]*vector1[0] - vector2[0]*vector1[1]};
-    if(dirVectorX[2] > 0){
-      dirVectorX[0] = dirVectorX[0] * -1;
-      dirVectorX[1] = dirVectorX[1] * -1;
-      dirVectorX[2] = dirVectorX[2] * -1;
+    std::vector<double> vectorX {vector1[1]*vector2[2] - vector1[2]*vector2[1], vector1[2]*vector2[0] - vector1[0]*vector2[2], vector2[1]*vector1[0] - vector2[0]*vector1[1]};
+    if(vectorX[2] > 0){
+      vectorX[0] = vectorX[0] * -1;
+      vectorX[1] = vectorX[1] * -1;
+      vectorX[2] = vectorX[2] * -1;
     }
 
     
@@ -362,31 +362,31 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     //   la vertical del objeto como vector normal al plano
     if(mod1 == 0 or mod2 == 0 or mod3 == 0)
     {
-      dirVectorX[0] = 0;
-      dirVectorX[1] = 0;
-      dirVectorX[2] = -1;
+      vectorX[0] = 0;
+      vectorX[1] = 0;
+      vectorX[2] = -1;
 
       vectorY[2] = 0;
     }
 
-    std::vector<double> vectorZ {dirVectorX[1]*vectorY[2]-vectorY[1]*dirVectorX[2], dirVectorX[2]*vectorY[0]-dirVectorX[0]*vectorY[2], dirVectorX[0]*vectorY[1]-vectorY[0]*dirVectorX[1]};
+    std::vector<double> vectorZ {vectorX[1]*vectorY[2]-vectorY[1]*vectorX[2], vectorX[2]*vectorY[0]-vectorX[0]*vectorY[2], vectorX[0]*vectorY[1]-vectorY[0]*vectorX[1]};
     
     //std::cout<<"Final vector: "<<vectorZ[0]<<" "<<vectorZ[1]<<" "<<vectorZ[2]<<std::endl;
     
     double modX, modY, modZ;
-    modX = sqrt(dirVectorX[0]*dirVectorX[0]+dirVectorX[1]*dirVectorX[1]+dirVectorX[2]*dirVectorX[2]);
+    modX = sqrt(vectorX[0]*vectorX[0]+vectorX[1]*vectorX[1]+vectorX[2]*vectorX[2]);
     modY = sqrt(vectorY[0]*vectorY[0]+vectorY[1]*vectorY[1]+vectorY[2]*vectorY[2]);
     modZ = sqrt(vectorZ[0]*vectorZ[0]+vectorZ[1]*vectorZ[1]+vectorZ[2]*vectorZ[2]);
     
     for(int i=0;i<3; i++){
-      dirVectorX [i]=  dirVectorX[i]/modX;
+      vectorX [i]=  vectorX[i]/modX;
       vectorY [i]=  vectorY[i]/modY;
       vectorZ [i]=  vectorZ[i]/modZ;
     }
 
     
 
-    std::cout<<"Final vector 1: "<<dirVectorX[0]<<" "<<dirVectorX[1]<<" "<<dirVectorX[2]<<std::endl;
+    std::cout<<"Final vector 1: "<<vectorX[0]<<" "<<vectorX[1]<<" "<<vectorX[2]<<std::endl;
     std::cout<<"Final vector 2: "<<vectorY[0]<<" "<<vectorY[1]<<" "<<vectorY[2]<<std::endl;
     std::cout<<"Final vector 3: "<<vectorZ[0]<<" "<<vectorZ[1]<<" "<<vectorZ[2]<<std::endl;
     
@@ -396,7 +396,7 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
       ROS_INFO("ERROR: file was not created.");
     }
     else{
-      my_file<<"Final vector 1: "<<dirVectorX[0]<<" "<<dirVectorX[1]<<" "<<dirVectorX[2]<<std::endl; 
+      my_file<<"Final vector 1: "<<vectorX[0]<<" "<<vectorX[1]<<" "<<vectorX[2]<<std::endl; 
       my_file<<"Final vector 2: "<<vectorY[0]<<" "<<vectorY[1]<<" "<<vectorY[2]<<std::endl;
       my_file<<"Final vector 3: "<<vectorZ[0]<<" "<<vectorZ[1]<<" "<<vectorZ[2]<<std::endl;  
       my_file.close();
@@ -635,19 +635,19 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     waypoints.push_back(desiredPoints[1]);
     moveit_msgs::RobotTrajectory trajectory;
 
-    do{
+    // do{
       
-      const double jump_threshold = 0.0;
-      const double eef_step = 0.001;
+    //   const double jump_threshold = 0.0;
+    //   const double eef_step = 0.001;
 
-      std::cout<<"Computing Cartesian Trajectory..."<<std::endl;
-      double fraction = (*move_group_interface_arm).computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory);
+    //   std::cout<<"Computing Cartesian Trajectory..."<<std::endl;
+    //   double fraction = (*move_group_interface_arm).computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory);
     
-      std::cout << "Insert 'n' to compute a new trajectory" << std::endl;
-      std::cout << "Insert 's' to save this trajectory" << std::endl;
-      std::cout << "Insert other letter to escape" << std::endl;
-      std::cin >> *inputChar;
-    } while(*inputChar != 'n' and *inputChar != 's');
+    //   std::cout << "Insert 'n' to compute a new trajectory" << std::endl;
+    //   std::cout << "Insert 's' to save this trajectory" << std::endl;
+    //   std::cout << "Insert other letter to escape" << std::endl;
+    //   std::cin >> *inputChar;
+    // } while(*inputChar != 'n' and *inputChar != 's');
 
     if(*inputChar == 's'){
       std::cout << "Executing the trajectory..." << std::endl;
@@ -717,38 +717,22 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
         
 }
 
-void contact_cb(const std_msgs::Int16MultiArray::ConstPtr& msg)
+void contact_cb(const std_msgs::Int32::ConstPtr& msg)
 {
   
   // Finger A
-  if(msg->data[0] == 1)
-  {
-    contact1_b = true;
-    std::cout<<"Contacto A"<<std::endl;
-    
-  }
-  else
-  {
-    contact1_b = false;
-  }
-
-  // Finger B
-  if(msg->data[1] == 1)
-  {
-    contact2_b = true;
-    std::cout<<"Contacto B"<<std::endl;
-    
-  }
-  else
-  {
-    contact2_b = false;
-  }
-
-  // All fingers
-  if(contact1_b && contact2_b)
+  if(msg->data == 1)
   {
     contact = true;
+    std::cout<<"Contacto"<<std::endl;
+    
   }
+  else
+  {
+    contact = false;
+  }
+
+  
 }
 
 void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInterface::Plan *my_plan_arm){
@@ -756,12 +740,7 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
   // Subscribe to sensor contact messages
   contact = false;
   contact_prev = false;
-  contact1_b = false;
-  contact2_b = false;
-  contact3_b = false;
-  contact1_prev = false;
-  contact2_prev = false;
-  contact3_prev = false;
+
   
   ros::Subscriber sub = nh.subscribe("/aurova/contacts_gripper", 10, contact_cb);
   ros::Publisher pub_3f = nh.advertise<std_msgs::Int32>("/aurova/grip_cmd", 10); 
@@ -770,7 +749,7 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
 
   std::this_thread::sleep_for(std::chrono::seconds(3));    
 
-  int mult_ini = 2;
+  int mult_ini = 5;
   std_msgs::Int32 value_3f;
   value_3f.data = 0;
   
@@ -786,12 +765,38 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
 
     value_3f.data += mult;
     
+    // Latch
     for(int i = 0; i < 5; i++)
     {
       pub_3f.publish(value_3f);
     }
 
     contact_prev = contact;
+
+    if(contact)
+    {
+      std::cout<<"The gripper is touching"<<std::endl;
+    }
+    else
+    {
+      std::cout<<"The gripper is NOT touching"<<std::endl;
+    }
+
+
+    char cont_close = ' ';
+
+    while(cont_close != 'y' and cont_close != 'n')
+    {
+      std::cout<<"Continue (y / n): ";
+      std::cin>>cont_close;
+    }
+
+    if(cont_close == 'n')
+    {
+      std::cout<<"\n\nClosing stopped"<<std::endl;
+      break;
+    }
+    
 
     std::this_thread::sleep_for(std::chrono::seconds(1));       
   }   
