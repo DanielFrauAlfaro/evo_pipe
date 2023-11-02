@@ -49,7 +49,7 @@ RUN apt update
 RUN apt install python-is-python3
 
 # Install pytorch
-RUN pip install torch==1.10.0+cu111 torchvision==0.11.0+cu111 torchaudio==0.10.0 -f https://download.pytorch.org/whl/torch_stable.html
+#RUN pip install torch==1.10.0+cu111 torchvision==0.11.0+cu111 torchaudio==0.10.0 -f https://download.pytorch.org/whl/torch_stable.html
 
 # Install graphic interface
 RUN apt-get update
@@ -111,9 +111,8 @@ RUN chown -R 1000:1000 ./../home/daniel/ros_ws/
 
 RUN export CUDA_VISIBLE_DEVICES=[0]
 
-# Allow rviz and gazebo use NVIDIA card
-#ENV NVIDIA_VISIBLE_DEVICES ${NVIDIA_VISIBLE_DEVICES:-all}
-#ENV NVIDIA_DRIVER_CAPABILITIES ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics
+
+# ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics
 
 # Install ros_control
 RUN cd home/daniel/ros_ws/src/ && git clone https://github.com/ros-controls/ros_control.git
@@ -166,7 +165,7 @@ RUN mkdir drivers && cd drivers && wget https://www.peak-system.com/fileadmin/me
 #RUN wget http://archive.ubuntu.com/ubuntu/pool/main/l/linux-hwe-5.15/linux-modules-5.15.0-76-generic_5.15.0-76.83~20.04.1_amd64.deb
 #RUN wget http://archive.ubuntu.com/ubuntu/pool/main/l/linux-hwe-5.15/linux-hwe-5.15-source-5.15.0_5.15.0-72.79~20.04.1_all.deb
 RUN apt-get update
-RUN apt-get install -y linux-headers-5.15.0-76-generic
+RUN apt-get install -y linux-headers-5.15.0-87-generic
 
 # RUN wget http://ports.ubuntu.com/pool/main/l/linux-hwe-5.19/linux-headers-5.19.0-50-generic-64k_5.19.0-50.50_arm64.deb
 # RUN dpkg -i linux-headers-5.19.0-50-generic-64k_5.19.0-50.50_arm64.deb
@@ -184,6 +183,13 @@ RUN echo "export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:/daniel/Desktop/evo_pipe/y
 
 RUN apt-get install -y python3-rospy
 RUN pip3 install roboticstoolbox-python
+
+# Allow rviz and gazebo use NVIDIA card
+ENV NVIDIA_VISIBLE_DEVICES ${NVIDIA_VISIBLE_DEVICES:-all}
+ENV NVIDIA_DRIVER_CAPABILITIES all 
+
+# compute,utility,graphics
+
 # RUN pip3 install plotvol3
 
 #RUN apt-add-repository ppa:dartsim/ppa 
@@ -195,7 +201,4 @@ RUN pip3 install roboticstoolbox-python
 #RUN apt-get install -y ros-noetic-moveit-visual-tools
 #RUN rosdep install --from-paths ~/ros_ws/src/ --ignore-src -r -y
 
-# rostopic pub /aurova/objects/add std_msgs/Int32 '1' -1
-# rostopic pub /aurova/objects/remove std_msgs/Int32 '1' -1
-# alias killg='killall gzclient && killall gzserver && killall rosmaster'
-# pkill gzserver
+
