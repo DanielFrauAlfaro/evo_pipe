@@ -349,3 +349,15 @@ que todas las transformaciones que se hacen en simulación respecto al "world" s
         a la hora de pintar los markers para que coindidieran las direcciones en el sistema de coordenadas del "base_link". Finalmente, se añadió una rotación
         de 45º según el eje positivo Z (antes era negativa pero con el cambio de "world" a "base_link" se añaden 180º) para hacer coincidir el sistema de referencia
         de geoGrasp con el de Moveit
+
+
+--------- DOCKER cosas ----------
+Habilitar gráfica en la Docker:
+    ENV NVIDIA_VISIBLE_DEVICES ${NVIDIA_VISIBLE_DEVICES:-all}
+    ENV NVIDIA_DRIVER_CAPABILITIES all
+
+
+--------------
+Transformacion a una PCD: https://pointclouds.org/documentation/tutorials/matrix_transform.html
+Tutoriales PCL: https://pcl.readthedocs.io/projects/tutorials/en/master/#basic-usage
+Tutorial RANSAC: https://adioshun.gitbooks.io/pcl/content/Tutorial/SampleConsensus/how-to-use-random-sample-consensus-model.html
