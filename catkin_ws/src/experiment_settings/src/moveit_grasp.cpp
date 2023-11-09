@@ -171,21 +171,21 @@ void drawDataRviz(GraspEvoContacts contacts, GraspEvoPose pose, ros::Publisher v
   point1.frame_id_ = "camera_depth_optical_frame";
 
 
-  tf::Stamped<tf::Point> point_baseX;
-  point_baseX.setX(1.0);
-  point_baseX.setY(0.0);
-  point_baseX.setZ(0.0);
-  point_baseX.frame_id_ = "camera_depth_optical_frame";
-  tf::Stamped<tf::Point> point_baseY;
-  point_baseY.setX(0.0);
-  point_baseY.setY(1.0);
-  point_baseY.setZ(0.0);
-  point_baseY.frame_id_ = "camera_depth_optical_frame";
-  tf::Stamped<tf::Point> point_baseZ;
-  point_baseZ.setX(0.0);
-  point_baseZ.setY(0.0);
-  point_baseZ.setZ(1.0);
-  point_baseZ.frame_id_ = "camera_depth_optical_frame";
+  // tf::Stamped<tf::Point> point_baseX;
+  // point_baseX.setX(1.0);
+  // point_baseX.setY(0.0);
+  // point_baseX.setZ(0.0);
+  // point_baseX.frame_id_ = "camera_depth_optical_frame";
+  // tf::Stamped<tf::Point> point_baseY;
+  // point_baseY.setX(0.0);
+  // point_baseY.setY(1.0);
+  // point_baseY.setZ(0.0);
+  // point_baseY.frame_id_ = "camera_depth_optical_frame";
+  // tf::Stamped<tf::Point> point_baseZ;
+  // point_baseZ.setX(0.0);
+  // point_baseZ.setY(0.0);
+  // point_baseZ.setZ(1.0);
+  // point_baseZ.frame_id_ = "camera_depth_optical_frame";
   
 // Transformadas de [[1, 0, 0], [0, 1, 0], [0, 0, 1]] en el "optical_depth_frame" a "base_link"
 // 0.492294
@@ -199,7 +199,7 @@ void drawDataRviz(GraspEvoContacts contacts, GraspEvoPose pose, ros::Publisher v
 // -0.472495
 // 0.288763
 // -0.536636
-  
+  Eigen::Vector3d pointWorld1 = transformPoint(point1, "camera_depth_optical_frame", "base_link");
   visualization_msgs::Marker marker1;
   marker1.header.frame_id = "base_link";
   marker1.header.stamp = ros::Time();
@@ -513,7 +513,7 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     tf::Stamped<tf::Point> pointGrasp, pointPreGrasp, aux;
     pointGrasp.setX(-0.0); //-0.22
     pointGrasp.setY(0);
-    pointGrasp.setZ(-0.22);
+    pointGrasp.setZ(-0.24);
     pointGrasp.frame_id_ = "objectAxis";
     
     pointPreGrasp.setX(-0.0);
@@ -527,7 +527,7 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     
     Eigen::Vector3d graspingPose = transformPoint(pointGrasp, "objectAxis", "base_link");
     Eigen::Vector3d preGraspingPose = transformPoint(pointPreGrasp, "objectAxis", "base_link");
-
+    Eigen::Vector3d preGraspingPose2 = transformPoint(pointPreGrasp, "object", "base_link");
     // // ---------------------------------------------------
 
     // cout<<"PointGrasp: "<<pointGrasp<<std::endl;
