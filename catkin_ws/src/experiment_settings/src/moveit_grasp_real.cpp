@@ -478,12 +478,12 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     tf::Stamped<tf::Point> pointGrasp, pointPreGrasp, aux;
     pointGrasp.setX(-0.0); //-0.22 --> se cambia un poco mas arriba para que no choque con la mesa en el real
     pointGrasp.setY(0);
-    pointGrasp.setZ(-0.25);
+    pointGrasp.setZ(-0.22);
     pointGrasp.frame_id_ = "objectAxis";
     
     pointPreGrasp.setX(-0.0);
     pointPreGrasp.setY(0);
-    pointPreGrasp.setZ(-0.35);
+    pointPreGrasp.setZ(-0.32);
     pointPreGrasp.frame_id_ = "objectAxis";
 
     
@@ -712,19 +712,24 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
       }
     }
 
+    
 
-    std::this_thread::sleep_for(std::chrono::seconds(2));   
-        
+    std::cout<<"FIN de segunda trayectoria\n\n";
+    std::this_thread::sleep_for(std::chrono::seconds(2)); 
+    std::cout<<"juntacion\n\n"; 
+    transformReceived = true;
+    t1.join(); 
+    std::cout<<"FIN de segunda trayectoria\n\n";
+    
 }
 
 void contact_cb(const std_msgs::Int32::ConstPtr& msg)
 {
   
   // Finger A
-  if(msg->data == 1)
+  if(msg->data != 3)
   {
     contact = true;
-    std::cout<<"Contacto"<<std::endl;
     
   }
   else
@@ -736,12 +741,12 @@ void contact_cb(const std_msgs::Int32::ConstPtr& msg)
 }
 
 void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInterface::Plan *my_plan_arm){
-
+  std::cout<<"AAAAAAAAA\n";
   // Subscribe to sensor contact messages
   contact = false;
   contact_prev = false;
 
-  
+  std::cout<<"SUSCRIPCIONES\n\n";
   ros::Subscriber sub = nh.subscribe("/aurova/contacts_gripper", 10, contact_cb);
   ros::Publisher pub_3f = nh.advertise<std_msgs::Int32>("/aurova/grip_cmd", 10); 
 
@@ -749,7 +754,7 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
 
   std::this_thread::sleep_for(std::chrono::seconds(3));    
 
-  int mult_ini = 5;
+  int mult_ini = 18;
   std_msgs::Int32 value_3f;
   value_3f.data = 0;
   
@@ -763,7 +768,7 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
       mult = mult_ini/2;
     }
 
-    value_3f.data += mult;
+    value_3f.data += int(mult);
     
     // Latch
     for(int i = 0; i < 5; i++)
@@ -817,11 +822,12 @@ void armUpAndReset(moveit::planning_interface::MoveGroupInterface *move_group_in
   (*move_group_interface_arm).setGoalTolerance(0.0001);
   std::cout << "MOVE TO 'INITIAL' POSITION" << std::endl;
 
-  (*move_group_interface_arm).setJointValueTarget((*move_group_interface_arm).getNamedTargetValues("home"));
-  (*move_group_interface_arm).plan(*my_plan_arm);
-  (*move_group_interface_arm).execute(*my_plan_arm);
+  // (*move_group_interface_arm).setJointValueTarget((*move_group_interface_arm).getNamedTargetValues("home"));
+  // (*move_group_interface_arm).plan(*my_plan_arm);
+  // (*move_group_interface_arm).execute(*my_plan_arm);
   
-  std::this_thread::sleep_for(std::chrono::seconds(2));
+  // std::this_thread::sleep_for(std::chrono::seconds(2));
+  std::cout<<"--- TAKE THE ARM TO HOME ----\n\n";
     
   bool decision = false;
   do{
@@ -957,11 +963,13 @@ int main(int argc, char *argv[]){
      
     char inputChar = ' ';
     moveCloseObject(graspAndMiddlePointsWorldFrame, nh, loop_rate, vis_pub, &move_group_interface_arm, &my_plan_arm, &identifierMarkerRviz, &markerRvizVector, &inputChar, saveFilesPath, actualObject);    
-
+    std::cout<<"sale de move\n\n";
     // Close gripper to grasp object
     if(inputChar == ' ')
     {
+      std::cout<<"entra en el if\n\n";
       closeGripper(nh, &my_plan_arm);
+      std::cout<<"sale del close\n\n";
     }
 
     // Arm up to check if object is grasped and prepare everything for next test
