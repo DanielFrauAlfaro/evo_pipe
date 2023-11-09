@@ -3,7 +3,7 @@
 import rospy
 import numpy as np
 import sys
-from std_msgs.msg import Int32, Int16MultiArray
+from std_msgs.msg import Int32
 from robotiq_3f_gripper_articulated_msgs.msg import Robotiq3FGripperRobotOutput, Robotiq3FGripperRobotInput
 
 # Messages
@@ -15,26 +15,13 @@ msg_3f.rGTO = 1
 pub_cmd = []
 
 
-# gDTA -> Contacto con el dedo A
-# gDTC -> Contacto con el dedo C
-# El valor de gDTB no indica el contacto, por lo que no se debería usar
-
 
 def input_cb(data):
     global pub_cmd
 
-    msg = Int16MultiArray()
+    msg = Int32()
 
-    msg.data = np.array([0, 0])
-
-    if data.gDTA == 1:
-        print("Colision: A")
-        msg.data[0] = 1
-    if data.gDTC == 1:
-        print("Colision: C")
-        msg.data[1] == 1
-    if data.gSTA == 1:
-        print("AAA")
+    msg.data = data.gSTA
 
     pub_cmd[1].publish(msg)
     
@@ -71,7 +58,7 @@ if __name__ == "__main__":
 
     # --- Publishers ---
     pub_cmd.append(rospy.Publisher("/Robotiq3FGripperRobotOutput", Robotiq3FGripperRobotOutput, queue_size=10))
-    pub_cmd.append(rospy.Publisher("/aurova/contacts_gripper", Int16MultiArray, queue_size=10))
+    pub_cmd.append(rospy.Publisher("/aurova/contacts_gripper", Int32, queue_size=10))
 
     
     # Spin
