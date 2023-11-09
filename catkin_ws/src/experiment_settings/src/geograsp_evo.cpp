@@ -9,6 +9,17 @@
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl_conversions/pcl_conversions.h>
+
+#include <pcl/io/pcd_io.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/keypoints/iss_3d.h>
+#include <pcl/features/fpfh_omp.h>
+#include <pcl/registration/sample_consensus_prerejective.h>
+#include <pcl/registration/icp.h>
+#include <pcl/registration/convergence_criteria.h>
+
+
 #include <ros/ros.h>
 #include "std_msgs/Int32.h"
 #include <tf/tf.h>
@@ -16,6 +27,7 @@
 
 ros::Subscriber sub;
 bool rgbdImgReceived;
+bool perform_ransac;
 sensor_msgs::PointCloud2::ConstPtr pcImg;
 
 std::vector<std::vector<float>> removeExceptNumbers(int numberFingers, std::string apertures_vector){
@@ -105,8 +117,7 @@ void PCCallback(const sensor_msgs::PointCloud2::ConstPtr& msg){
 }
 
 template<typename T, typename U>
-void extractInliersCloud(const T & inputCloud,
-    const pcl::PointIndices::Ptr & inputCloudInliers, T outputCloud) {
+void extractInliersCloud(const T & inputCloud, const pcl::PointIndices::Ptr & inputCloudInliers, T outputCloud) {
   U extractor;
 
   extractor.setInputCloud(inputCloud);
@@ -114,15 +125,25 @@ void extractInliersCloud(const T & inputCloud,
   extractor.filter(*outputCloud);
 }
 
+
+
+
 void processPC(ros::NodeHandle nh, std::string saveFilesPath, int gripTipSize, int numberFingers, int uniqueMobility, int graspsTrack, std::vector<std::vector<float>> apertures, int actualObject){
 
-  // pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer("Cloud viewer"));      
-  // viewer->initCameraParameters();
-  // viewer->addCoordinateSystem(0.1);
-  // viewer->setBackgroundColor (0, 0, 0);
+  pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer("Cloud viewer"));      
+  viewer->initCameraParameters();
+  viewer->addCoordinateSystem(0.1);
+  viewer->setBackgroundColor (0, 0, 0);
 
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>());
+
   pcl::fromROSMsg(*pcImg, *cloud);
+
+
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr object (new pcl::PointCloud<pcl::PointXYZRGB>());
+  pcl::io::loadPCDFile<pcl::PointXYZRGB> ("/daniel/Desktop/evo_pipe/catkin_ws/PCD/cracker_box_original.pcd", *object);
+  //pcl::io::loadPCDFile<pcl::PointXYZ> ("/daniel/Desktop/evo_pipe/catkin_ws/PCD/cracker_box_original.pcd", *cloud);
+
 
   // Remove NaN values and make it dense
   std::vector<int> nanIndices;
@@ -145,14 +166,14 @@ void processPC(ros::NodeHandle nh, std::string saveFilesPath, int gripTipSize, i
   ptFilter.setFilterLimits(-0.50, 0.30);
   ptFilter.filter(*cloud);
   
-  // viewer->addPointCloud<pcl::PointXYZ> (cloud, "sample cloud");
+  viewer->addPointCloud<pcl::PointXYZ> (cloud, "sample cloud");
   
-  // while (!viewer->wasStopped ()){
-  //   viewer->spinOnce (100);
-  // }
+  while (!viewer->wasStopped ()){
+    viewer->spinOnce (100);
+  }
   
-  // viewer->removeAllPointClouds();
-  // viewer->removeAllShapes();
+  viewer->removeAllPointClouds();
+  viewer->removeAllShapes();
   
   // Create the segmentation object for the planar model and set all the parameters
   pcl::SACSegmentation<pcl::PointXYZ> sacSegmentator;
@@ -192,16 +213,201 @@ void processPC(ros::NodeHandle nh, std::string saveFilesPath, int gripTipSize, i
   ecExtractor.setInputCloud(cloud);
   ecExtractor.extract(clusterIndices);
   
-  // pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> rgb(cloud, 255, 0, 0);
-  // viewer->addPointCloud<pcl::PointXYZ>(cloud, rgb, "Main cloud");
+  pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> rgb(cloud, 255, 0, 0);
+  viewer->addPointCloud<pcl::PointXYZ>(cloud, rgb, "Main cloud");
 
-  // while (!viewer->wasStopped ()){
-  //   viewer->spinOnce (100);
-  // }
+  while (!viewer->wasStopped ()){
+    viewer->spinOnce (100);
+  }
   
-  // viewer->removeAllPointClouds();
-  // viewer->removeAllShapes();
-  
+  viewer->removeAllPointClouds();
+  viewer->removeAllShapes();
+
+  if(perform_ransac)
+  {
+
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr scene(new pcl::PointCloud<pcl::PointXYZRGB>);
+
+    //pcl::copyPointCloud(object_test,my_cloud);
+    pcl::copyPointCloud(*cloud,*scene);
+
+    pcl::visualization::PCLVisualizer viewer_("3D Viewer");
+    viewer_.setBackgroundColor(255, 255, 255);
+    viewer_.addPointCloud(object, "scene_cloud");
+    viewer_.addPointCloud(scene, "transformed_object");
+    viewer_.spin();
+
+    
+
+
+
+    // ------------------------ RANSAC -----------------------------
+    std::cout<<"\n\nPERFORMING RANSAC\n\n"; // my_cloud --> object
+                                            // cloud --> scene
+
+    // Voxel
+    std::cout<<"Voxeling ...\n";
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr scene_voxel(new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr object_voxel(new pcl::PointCloud<pcl::PointXYZRGB>);
+
+    pcl::VoxelGrid<pcl::PointXYZRGB> sor;
+    sor.setInputCloud(scene);
+    sor.setLeafSize(0.001f, 0.001f, 0.001f);
+    sor.filter(*scene_voxel);
+
+    sor.setInputCloud(object);
+    sor.filter(*object_voxel);
+
+    // Normals
+    std::cout<<"Computing Normals ...\n";
+    pcl::PointCloud<pcl::Normal>::Ptr scene_normals(new pcl::PointCloud<pcl::Normal>);
+    pcl::PointCloud<pcl::Normal>::Ptr object_normals(new pcl::PointCloud<pcl::Normal>);
+    float voxel_size = 0.01f;
+
+    pcl::NormalEstimation<pcl::PointXYZRGB, pcl::Normal> ne;
+    ne.setInputCloud(scene_voxel);
+    //ne.setKSearch(30);
+    ne.setRadiusSearch(0.03);
+    ne.compute(*scene_normals);
+
+    ne.setInputCloud(object_voxel); 
+    ne.compute(*object_normals);
+
+    // ISS keypoints
+    std::cout<<"Computing ISS keypoints ...\n";
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr scene_keypoints(new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr object_keypoints(new pcl::PointCloud<pcl::PointXYZRGB>);
+
+    pcl::ISSKeypoint3D<pcl::PointXYZRGB, pcl::PointXYZRGB> iss_detector;
+    pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree_(new pcl::search::KdTree<pcl::PointXYZRGB>);
+    iss_detector.setSearchMethod(tree_);
+    iss_detector.setSalientRadius(0.01); // Saliency = ultimo eigenvalue. Para ser seleccionado tiene que ser el mayor en vecindad
+    iss_detector.setNonMaxRadius(0.01);
+    iss_detector.setThreshold21(1);  // Umbrales para los eigen values, es por ratios: e2/e1 y e3/e2
+    iss_detector.setThreshold32(1);
+    iss_detector.setMinNeighbors(3);
+    iss_detector.setNumberOfThreads(8);
+    iss_detector.setInputCloud(scene_voxel);
+    iss_detector.compute(*scene_keypoints);
+
+    iss_detector.setInputCloud(object_voxel);   // AQUI IBA object_voxel
+    iss_detector.compute(*object_keypoints);
+
+
+    pcl::visualization::PCLVisualizer viewer_aux_3("3D Viewer");
+    viewer_aux_3.setBackgroundColor(255, 255, 255);
+    viewer_aux_3.addPointCloud(object_keypoints, "scene_cloud");
+    viewer_aux_3.addPointCloud(scene_keypoints, "transformed_object");
+    viewer_aux_3.spin();
+
+    // Normal de los keypoints
+    std::cout<<"Computing Normal Keypoints ...\n";
+    pcl::PointCloud<pcl::Normal>::Ptr scene_keypoints_normals(new pcl::PointCloud<pcl::Normal>);
+    pcl::PointCloud<pcl::Normal>::Ptr object_keypoints_normals(new pcl::PointCloud<pcl::Normal>);
+
+    ne.setInputCloud(scene_keypoints);
+    //ne.setKSearch(4);
+    ne.setRadiusSearch(0.03);
+    ne.compute(*scene_keypoints_normals);
+
+    ne.setInputCloud(object_keypoints);
+    ne.compute(*object_keypoints_normals);
+
+
+    // FPFH
+    std::cout<<"Computing FPFH features ...\n";
+    pcl::PointCloud<pcl::FPFHSignature33>::Ptr scene_fpfhs(new pcl::PointCloud<pcl::FPFHSignature33>);
+    pcl::PointCloud<pcl::FPFHSignature33>::Ptr object_fpfhs(new pcl::PointCloud<pcl::FPFHSignature33>);
+
+    pcl::FPFHEstimationOMP<pcl::PointXYZRGB, pcl::Normal, pcl::FPFHSignature33> fpfh_est;
+    fpfh_est.setInputCloud(scene_keypoints);
+    fpfh_est.setInputNormals(scene_keypoints_normals);
+    fpfh_est.setNumberOfThreads(8);
+    fpfh_est.setSearchMethod(tree_);
+    fpfh_est.setRadiusSearch(0.07);
+    //fpfh_est.setKSearch(35);
+    fpfh_est.compute(*scene_fpfhs);
+
+    fpfh_est.setInputCloud(object_keypoints);
+    fpfh_est.setInputNormals(object_keypoints_normals);
+    fpfh_est.compute(*object_fpfhs);
+
+
+    // Apply RANSAC
+    std::cout<<"Applying RANSAC ...\n";
+    pcl::SampleConsensusPrerejective<pcl::PointXYZRGB, pcl::PointXYZRGB, pcl::FPFHSignature33> reg;
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr object_aligned(new pcl::PointCloud<pcl::PointXYZRGB>);
+    reg.setInputSource(object_keypoints);
+    reg.setSourceFeatures(object_fpfhs);
+    reg.setInputTarget(scene_keypoints);
+    reg.setTargetFeatures(scene_fpfhs);
+    reg.setMaximumIterations(5000000);
+    reg.setNumberOfSamples(3);
+    reg.setSimilarityThreshold(0.9f);
+    reg.setMaxCorrespondenceDistance(0.08f);
+    reg.align(*object_aligned);
+
+    // Transformation matrix 
+    Eigen::Matrix4f transformation_matrix = reg.getFinalTransformation();
+
+    pcl::transformPointCloud(*object_voxel, *object_aligned, transformation_matrix);
+    pcl::transformPointCloud(*object, *object, transformation_matrix);
+
+    pcl::visualization::PCLVisualizer viewer_aux_2("3D Viewer");
+    viewer_aux_2.setBackgroundColor(255, 255, 255);
+    viewer_aux_2.addPointCloud(scene_voxel, "scene_cloud");
+    viewer_aux_2.addPointCloud(object_aligned, "transformed_object");
+    viewer_aux_2.spin();
+
+    // ICP
+    std::cout<<"Applying ICP ...\n";
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr object_aligned_icp(new pcl::PointCloud<pcl::PointXYZRGB>);
+      
+    pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> icp;
+    icp.setInputSource(object_aligned);
+    icp.setInputTarget(scene);
+    icp.setMaxCorrespondenceDistance(0.04);
+    icp.setEuclideanFitnessEpsilon(1e-09);
+    icp.setTransformationEpsilon(1e-09);
+    icp.setMaximumIterations(300);
+
+    icp.align(*object_aligned);
+
+    pcl::transformPointCloud(*object, *object, icp.getFinalTransformation());
+
+    std::cout<<"Second ICP ...\n";
+    icp.setInputSource(object_aligned);
+    icp.setInputTarget(scene);
+    icp.setMaxCorrespondenceDistance(0.02);
+    icp.setEuclideanFitnessEpsilon(1e-09);
+    icp.setTransformationEpsilon(1e-09);
+    icp.setMaximumIterations(300);
+    icp.align(*object_aligned);
+    pcl::transformPointCloud(*object, *object, icp.getFinalTransformation());
+
+    std::cout<<"Third ICP ...\n";
+    icp.setInputSource(object_aligned);
+    icp.setInputTarget(scene_voxel);
+    icp.setMaxCorrespondenceDistance(0.008);
+    icp.setEuclideanFitnessEpsilon(1e-09);
+    icp.setTransformationEpsilon(1e-09);
+    icp.setMaximumIterations(500);
+    icp.align(*object_aligned);
+    pcl::transformPointCloud(*object, *object, icp.getFinalTransformation());
+
+    
+
+    std::cout << "\n\n\nFitness: " << icp.getFitnessScore() << std::endl <<std::endl<<std::endl;
+
+    pcl::visualization::PCLVisualizer viewer_aux("3D Viewer");
+    viewer_aux.setBackgroundColor(255, 255, 255);
+    viewer_aux.addPointCloud(scene, "scene_cloud");
+    viewer_aux.addPointCloud(object, "transformed_object");
+    viewer_aux.spin();
+
+    pcl::copyPointCloud(*object, *cloud);
+  }
+
   if (clusterIndices.empty()) {
     ROS_INFO("Cluster indices is empty. Can not keep on with the GeoGraspEvo algorithm.");
   }
@@ -245,9 +451,9 @@ void processPC(ros::NodeHandle nh, std::string saveFilesPath, int gripTipSize, i
         
         // ############################## SAVE PCDs ##########################################
         // Guardar la nube del objeto
-        //std::cout<<"\n\nGUARDANDO LA NUBE\n\n";
-        //pcl::io::savePCDFileASCII (saveFilesPath+std::to_string(actualObject)+"_object.pcd", *objectCloud);
-        //pcl::io::savePCDFileASCII (saveFilesPath+std::to_string(actualObject)+"_plane.pcd", *cloudPlane);
+        std::cout<<"\n\nGUARDANDO LA NUBE\n\n";
+        pcl::io::savePCDFileASCII (saveFilesPath+std::to_string(actualObject)+"_object.pcd", *objectCloud);
+        pcl::io::savePCDFileASCII (saveFilesPath+std::to_string(actualObject)+"_plane.pcd", *cloudPlane);
         // ###################################################################################
 
 
@@ -314,9 +520,9 @@ void processPC(ros::NodeHandle nh, std::string saveFilesPath, int gripTipSize, i
         bestPose = geoGraspPoints.getBestGraspPose();   
         ranking = geoGraspPoints.getBestRanking();     
 
-        // Visualize the result
-        // pcl::visualization::PointCloudGeometryHandlerXYZ<pcl::PointXYZ> rgb(objectCloud);
-        // pcl::visualization::PointCloudGeometryHandlerXYZ<pcl::PointXYZ> planeRGB(cloudPlane);
+        //Visualize the result
+        pcl::visualization::PointCloudGeometryHandlerXYZ<pcl::PointXYZ> rgb_2(objectCloud);
+        pcl::visualization::PointCloudGeometryHandlerXYZ<pcl::PointXYZ> planeRGB_2(cloudPlane);
   
         std::string objectLabel = "";
         std::ostringstream converter;
@@ -325,13 +531,13 @@ void processPC(ros::NodeHandle nh, std::string saveFilesPath, int gripTipSize, i
         objectLabel += converter.str();
         objectLabel += "-";
 
-        // viewer->addPointCloud<pcl::PointXYZ>(objectCloud, rgb, objectLabel + "Object");
-        // viewer->addPointCloud<pcl::PointXYZ>(cloudPlane, planeRGB, objectLabel + "Plane");
+        viewer->addPointCloud<pcl::PointXYZ>(objectCloud, rgb_2, objectLabel + "Object");
+        viewer->addPointCloud<pcl::PointXYZ>(cloudPlane, planeRGB_2, objectLabel + "Plane");
 
-        // for (int i=0; i<bestGrasp.graspContactPoints.size(); i++){
-        //   std::string cad = "Best grasp n." + std::to_string(i);
-        //   viewer->addSphere(bestGrasp.graspContactPoints[i], 0.01, 255, 255, 255, objectLabel + cad);
-        // }      
+        for (int i=0; i<bestGrasp.graspContactPoints.size(); i++){
+          std::string cad = "Best grasp n." + std::to_string(i);
+          viewer->addSphere(bestGrasp.graspContactPoints[i], 0.01, 255, 255, 255, objectLabel + cad);
+        }      
       
         // Best of the best cout
       
@@ -533,17 +739,17 @@ void processPC(ros::NodeHandle nh, std::string saveFilesPath, int gripTipSize, i
     // *save_PC = *PC_color_result;
     // *save_PC += *cloud_cluster;
     
-    //pcl::io::savePCDFileASCII (saveFilesPath+std::to_string(actualObject)+"_PC_graspPoints.pcd", *save_PC);
+    // pcl::io::savePCDFileASCII (saveFilesPath+std::to_string(actualObject)+"_PC_graspPoints.pcd", *save_PC);
     // #############################################################################
     
-    // pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(PC_color_result);
-    // pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> points_rgb(cloud_cluster);
-    // pcl::visualization::PCLVisualizer::Ptr viewer1(new pcl::visualization::PCLVisualizer("Viewer")); 
-    // viewer1->addPointCloud<pcl::PointXYZRGB>(PC_color_result, rgb,"Object");
-    // viewer1->addPointCloud<pcl::PointXYZRGB>(cloud_cluster, points_rgb,"Points");
+    pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(PC_color_result);
+    pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> points_rgb(cloud_cluster);
+    pcl::visualization::PCLVisualizer::Ptr viewer1(new pcl::visualization::PCLVisualizer("Viewer")); 
+    viewer1->addPointCloud<pcl::PointXYZRGB>(PC_color_result, rgb,"Object");
+    viewer1->addPointCloud<pcl::PointXYZRGB>(cloud_cluster, points_rgb,"Points");
     
-    // while (!viewer1->wasStopped())
-    //   viewer1->spinOnce(100);
+    while (!viewer1->wasStopped())
+      viewer1->spinOnce(100);
     
     // pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(save_PC); 
     // pcl::visualization::PCLVisualizer::Ptr viewer1(new pcl::visualization::PCLVisualizer("Viewer1")); 
@@ -632,19 +838,11 @@ int main(int argc, char *argv[]){
   nh.getParam("geograspEvo_set_number_fingers", numberFingers);
   nh.getParam("geograspEvo_set_unique_mobility", uniqueMobility);
   nh.getParam("geograspEvo_set_grasps_track", graspsTrack);
+  nh.getParam("geograspEvo_ransac", perform_ransac);
 
   std::string aperturesVector;
   nh.getParam("geograspEvo_set_apertures", aperturesVector);
   std::vector<std::vector<float>> apertures = removeExceptNumbers(numberFingers, aperturesVector);
-
-  for(int i = 0; i<apertures.size(); i++)
-  {
-    for(int j=0; j<apertures[i].size(); j++)
-    {
-      std::cout<<apertures[i][j]<<" hola ";
-    }
-    std::cout<<std::endl;
-  }
 
   int actualObject = 0;
    
