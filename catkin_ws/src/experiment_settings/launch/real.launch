@@ -12,8 +12,7 @@
 
 
   <!-- Lanza el driver de la Realsense en ROS -->
-  <include file="$(find realsense2_camera)/launch/rs_camera_mine.launch">
-    <value="initial_reset" value="true">
+  <include file="$(find realsense2_camera)/launch/rs_multiple_devices.launch">
   </include>
 
   <!-- Esqueleto del proyecto: captura las imagenes -->
