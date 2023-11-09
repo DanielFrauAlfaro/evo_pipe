@@ -9,6 +9,7 @@
   <arg name="geograspEvo_set_number_fingers" value="3" />
   <arg name="geograspEvo_set_unique_mobility" value="0" />
   <arg name="geograspEvo_set_grasps_track" value="5" />
+  <arg name="geograspEvo_ransac" value="false" />
 
 
   <!-- Lanza el driver de la Realsense en ROS -->
@@ -28,7 +29,8 @@
     <param name="geograspEvo_set_apertures" value="$(arg geograspEvo_set_apertures)" />
     <param name="geograspEvo_set_number_fingers" value="$(arg geograspEvo_set_number_fingers)" />
     <param name="geograspEvo_set_unique_mobility" value="$(arg geograspEvo_set_unique_mobility)" />
-    <param name="geograspEvo_set_grasps_track" value="$(arg geograspEvo_set_grasps_track)" />           
+    <param name="geograspEvo_set_grasps_track" value="$(arg geograspEvo_set_grasps_track)" />     
+    <param name="geograspEvo_ransac" value="$(arg geograspEvo_ransac)" />       
   </node>
 
   <!-- Nodo que utiliza el moveit -->
