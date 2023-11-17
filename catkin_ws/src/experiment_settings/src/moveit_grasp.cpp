@@ -838,7 +838,7 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
         int mult = mult_ini;
         if(contact1_b)
         {
-          mult = 2;
+          mult = mult_ini / 2.0;
         }
         joint_values[i] += mult * 0.0174533 ;//gripper_value;
         joint_values[i+2] = -0.61085;
@@ -850,7 +850,7 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
         int mult = mult_ini;
         if(contact2_b)
         {
-          mult = 2;
+          mult = mult_ini / 2.0;
         }
         joint_values[i] += mult * 0.0174533 ;//gripper_value;
         joint_values[i+2] = -0.61085;
@@ -862,7 +862,7 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
         int mult = mult_ini;
         if(contact3_b)
         {
-          mult = 2;
+          mult = mult_ini / 2.0;
         }
         joint_values[i] += mult * 0.0174533 ;//gripper_value;
         joint_values[i+2] = -0.61085;
