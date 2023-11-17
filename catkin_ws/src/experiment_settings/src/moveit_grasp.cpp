@@ -895,9 +895,9 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
   (*move_group_interface_gripper).execute(*my_plan_arm); 
   // ------------------------------------------------------------
 
-  std::string aux;
+  // std::string aux;
 
-  cin>>aux;
+  // cin>>aux;
 
   std::this_thread::sleep_for(std::chrono::seconds(2));  
     
