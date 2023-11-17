@@ -478,7 +478,7 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     tf::Stamped<tf::Point> pointGrasp, pointPreGrasp, aux;
     pointGrasp.setX(-0.0); //-0.22 --> se cambia un poco mas arriba para que no choque con la mesa en el real
     pointGrasp.setY(0);
-    pointGrasp.setZ(-0.22);
+    pointGrasp.setZ(-0.23);
     pointGrasp.frame_id_ = "objectAxis";
     
     pointPreGrasp.setX(-0.0);
