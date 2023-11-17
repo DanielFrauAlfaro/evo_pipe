@@ -351,13 +351,17 @@ que todas las transformaciones que se hacen en simulación respecto al "world" s
         de geoGrasp con el de Moveit
 
 
+# ----------------- CAMBIO AL RESET DEL ORDENADOR -----------------
 --------- DOCKER cosas ----------
 Habilitar gráfica en la Docker:
     ENV NVIDIA_VISIBLE_DEVICES ${NVIDIA_VISIBLE_DEVICES:-all}
     ENV NVIDIA_DRIVER_CAPABILITIES all
 
-
 --------------
 Transformacion a una PCD: https://pointclouds.org/documentation/tutorials/matrix_transform.html
 Tutoriales PCL: https://pcl.readthedocs.io/projects/tutorials/en/master/#basic-usage
 Tutorial RANSAC: https://adioshun.gitbooks.io/pcl/content/Tutorial/SampleConsensus/how-to-use-random-sample-consensus-model.html
+Visualize PCD: https://imagetostl.com/es/ver-pcd-en-linea#google_vignette
+
+
+IMPORTANTE: conectar la RealSense a uno de los puertos USB de detrás del PC, los de delante no funcionan correctamente.
