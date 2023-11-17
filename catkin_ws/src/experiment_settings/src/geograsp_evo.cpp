@@ -141,7 +141,7 @@ void processPC(ros::NodeHandle nh, std::string saveFilesPath, int gripTipSize, i
 
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr object (new pcl::PointCloud<pcl::PointXYZRGB>());
-  pcl::io::loadPCDFile<pcl::PointXYZRGB> ("/daniel/Desktop/evo_pipe/catkin_ws/PCD/sugar_box_original.pcd", *object);
+  pcl::io::loadPCDFile<pcl::PointXYZRGB> ("/daniel/Desktop/evo_pipe/catkin_ws/PCD/master_chef_can_original.pcd", *object);
   //pcl::io::loadPCDFile<pcl::PointXYZ> ("/daniel/Desktop/evo_pipe/catkin_ws/PCD/cracker_box_original.pcd", *cloud);
 
 
@@ -412,6 +412,9 @@ void processPC(ros::NodeHandle nh, std::string saveFilesPath, int gripTipSize, i
 
 
   }
+  else{
+    pcl::copyPointCloud(*cloud, *cloud_); 
+  }
 
   if (clusterIndices.empty()) {
     ROS_INFO("Cluster indices is empty. Can not keep on with the GeoGraspEvo algorithm.");
@@ -444,13 +447,13 @@ void processPC(ros::NodeHandle nh, std::string saveFilesPath, int gripTipSize, i
         pcl::copyPointCloud(*cloudPlane, *cloudPlaneXYZ);
         pcl::copyPointCloud(*objectCloud, *objectCloudXYZ);
 
-        pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> rgb(cloud, 255, 0, 0);
-        pcl::visualization::PCLVisualizer::Ptr viewer1(new pcl::visualization::PCLVisualizer("Viewer")); 
-        viewer1->addPointCloud<pcl::PointXYZ>(cloud_, rgb,"Object");
-        viewer1->addPointCloud<pcl::PointXYZ>(cloudPlane, rgb,"Points");
+        // pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> rgb(cloud, 255, 0, 0);
+        // pcl::visualization::PCLVisualizer::Ptr viewer1(new pcl::visualization::PCLVisualizer("Viewer")); 
+        // viewer1->addPointCloud<pcl::PointXYZ>(cloud_, rgb,"Object");
+        // viewer1->addPointCloud<pcl::PointXYZ>(cloudPlane, rgb,"Points");
         
-        while (!viewer1->wasStopped())
-          viewer1->spinOnce(100);
+        // while (!viewer1->wasStopped())
+        //   viewer1->spinOnce(100);
 
         GeoGraspEvo geoGraspPoints;
         geoGraspPoints.setBackgroundCloud(cloudPlaneXYZ);
