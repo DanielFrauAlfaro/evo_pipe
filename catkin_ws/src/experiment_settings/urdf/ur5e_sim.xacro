@@ -40,6 +40,14 @@
   <!--property name="wrist_3_length" value="0.0823" /-->
   <!-- manually measured -->
 
+  <!-- <link name="root"/>
+  <joint name="root2world" type="fixed">
+    <parent link="root"/>
+    <child link="world"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+   -->
+
   <xacro:include filename="$(find ur_description)/urdf/inc/ur_macro.xacro"/>
   <xacro:ur_robot
     prefix=""
