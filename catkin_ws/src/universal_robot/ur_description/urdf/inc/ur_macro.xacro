@@ -339,7 +339,7 @@
 
 
   <!-- AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA -->
-
+<!-- 
   <link name="ee_link"/>
   <joint name="tool0_ee_link" type="fixed">
     <parent link="tool0"/>
@@ -481,7 +481,7 @@
     <origin rpy="1.57 -0.0 -0.785" xyz="0.08423 0.161 -0.0"/>
   </joint>
 
-
+ -->
 
 
   </xacro:macro>
