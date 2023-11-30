@@ -30,6 +30,7 @@
 ros::Subscriber sub;
 bool graspResult, transformReceived, contact, contact1_b, contact2_b, contact3_b, contact1_prev, contact2_prev, contact3_prev;
 experiment_settings::Grasp::ConstPtr graspResultMsg;
+Eigen::Quaterniond qtf;
 
 void graspResultCallback(const experiment_settings::Grasp::ConstPtr& msg){
   
@@ -148,8 +149,12 @@ void drawDataRviz(GraspEvoContacts contacts, GraspEvoPose pose, ros::Publisher v
     else if(i==1){
       marker.color.g = 1.0f;
     }
-    else{
+    else if(i == 2){
       marker.color.b = 1.0f;
+    }
+    else{
+      marker.color.r = 0.5f;
+      marker.color.g = 0.5f;
     }
     marker.lifetime = ros::Duration(1000000);
 
@@ -291,171 +296,287 @@ void task1(ros::NodeHandle nh, ros::Rate loop_rate, tf::Transform transformFrame
   transformReceived = true;
 }*/
 
-void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame, ros::NodeHandle nh, ros::Rate loop_rate, ros::Publisher vis_pub, moveit::planning_interface::MoveGroupInterface *move_group_interface_arm, moveit::planning_interface::MoveGroupInterface::Plan *my_plan_arm, int *identifierMarkerRviz, std::vector<visualization_msgs::Marker> *markerRvizVector, char *inputChar){
+void moveCloseObject(std::vector<Eigen::Vector3d> *graspAndMiddlePointsWorldFrame, ros::NodeHandle nh, ros::Rate loop_rate, ros::Publisher vis_pub, moveit::planning_interface::MoveGroupInterface *move_group_interface_arm, moveit::planning_interface::MoveGroupInterface::Plan *my_plan_arm, int *identifierMarkerRviz, std::vector<visualization_msgs::Marker> *markerRvizVector, char *inputChar, std::string saveFilesPath, int actualObject){
 
     std::vector<geometry_msgs::Pose> desiredPoints;
     std::vector<std::vector<double>> points;
     
     std::cout<<"Points to work with: "<<std::endl;
-    for(int i=0;i<graspAndMiddlePointsWorldFrame.size()-1;i++){
-      std::vector<double> point {graspAndMiddlePointsWorldFrame[i][0], graspAndMiddlePointsWorldFrame[i][1], graspAndMiddlePointsWorldFrame[i][2]};
+    for(int i=0;i<graspAndMiddlePointsWorldFrame->size();i++){
+      std::vector<double> point {(*graspAndMiddlePointsWorldFrame)[i][0], (*graspAndMiddlePointsWorldFrame)[i][1], (*graspAndMiddlePointsWorldFrame)[i][2]};
       
-      std::cout<<"############\n\n";
+      std::cout<<"###########\n\n";
       std::cout<<point[0]<<" "<<point[1]<<" "<<point[2]<<std::endl;
-      std::cout<<"############\n\n";
+      std::cout<<"###########\n\n";
 
       points.push_back(point);
     }
     std::cout<<std::endl;
 
 
+    // Calcula los tres vectores posibles
+    // std::vector<double> vector1 {points[1][0] - points[0][0], points[1][1] - points[0][1], points[1][2] - points[0][2]};
+    // std::vector<double> vector2 {points[2][0] - points[0][0], points[2][1] - points[0][1], points[2][2] - points[0][2]};
+    // std::vector<double> vector3 {points[2][0] - points[1][0], points[2][1] - points[1][1], points[2][2] - points[1][2]};
+
+
+
+
+
     // ################### Modificaciones para calcular el mejor plano ########################
-    std::vector<double> vector1 {points[1][0] - points[0][0], points[1][1] - points[0][1], points[1][2] - points[0][2]};
-    std::vector<double> vector2 {points[2][0] - points[0][0], points[2][1] - points[0][1], points[2][2] - points[0][2]};
+    std::vector<double> vector2 {points[1][0] - points[0][0], points[1][1] - points[0][1], points[1][2] - points[0][2]};
+    std::vector<double> vector1 {points[3][0] - points[0][0], points[3][1] - points[0][1], points[3][2] - points[0][2]};
+    std::vector<double> vector3 {points[3][0] - points[1][0], points[3][1] - points[1][1], points[3][2] - points[1][2]};
 
-    float d_min = std::numeric_limits<float>::max();
+    // float d_min = std::numeric_limits<float>::max();
 
-    // -------- Cálculo de plano -------
-    for(int i = 0; i<4; i++)
-    {
-      // Obtiene los indices
-      int i_0 = i;
-      int i_1 = i + 1;
-      int i_2 = i + 2;
-      int i_3 = i + 3;
+    // // -------- Cálculo de plano -------
+    // for(int i = 0; i<4; i++)
+    // {
+    //   // Obtiene los indices
+    //   int i_0 = i;
+    //   int i_1 = i + 1;
+    //   int i_2 = i + 2;
+    //   int i_3 = i + 3;
 
-      // Comprueba que no se exceda el maximo de puntos (4 para allegro)
-      if(i_1 >= 4)
-      {
-        i_1 -= 4;
-      }
+    //   // Comprueba que no se exceda el maximo de puntos (4 para allegro)
+    //   if(i_1 >= 4)
+    //   {
+    //     i_1 -= 4;
+    //   }
       
-      if(i_2 >= 4)
-      {
-        i_2 -= 4;
-      }
+    //   if(i_2 >= 4)
+    //   {
+    //     i_2 -= 4;
+    //   }
       
-      if(i_3 >= 4)
-      {
-        i_3 -= 4;
-      }
+    //   if(i_3 >= 4)
+    //   {
+    //     i_3 -= 4;
+    //   }
 
-      // Cálculo de los dos vectores
-      std::vector<double> vector1_  {points[i_1][0] - points[i_0][0], points[i_1][1] - points[i_0][1], points[i_1][2] - points[i_0][2]};
-      std::vector<double> vector2_ {points[i_2][0] - points[i_0][0], points[i_2][1] - points[i_0][1], points[i_2][2] - points[i_0][2]};
+    //   // Cálculo de los dos vectores
+    //   std::vector<double> vector1_  {points[i_1][0] - points[i_0][0], points[i_1][1] - points[i_0][1], points[i_1][2] - points[i_0][2]};
+    //   std::vector<double> vector2_ {points[i_2][0] - points[i_0][0], points[i_2][1] - points[i_0][1], points[i_2][2] - points[i_0][2]};
+    //   std::vector<double> vector3_ {points[i_3][0] - points[i_0][0], points[i_3][1] - points[i_0][1], points[i_3][2] - points[i_0][2]};
+      
+    //   // Cálculo de parámetros para la ecuación general de un plano
+    //   float A = vector1_[1] * vector2_[2] - vector1_[2] * vector2_[1];
+    //   float B = vector1_[2] * vector2_[0] - vector1_[0] * vector2_[2];
+    //   float C = vector1_[0] * vector2_[2] - vector1_[2] * vector2_[0];
+    //   float D = (-A) * points[i_0][0] + points[i_0][1] * (-B) + points[i_0][2] * (-C);
 
-      // Cáluclo de parámetros para la ecuación general de un plano
-      float A = vector1_[1] * vector2_[2] - vector1_[2] * vector2_[1];
-      float B = vector1_[2] * vector2_[0] - vector1_[0] * vector2_[2];
-      float C = vector1_[0] * vector2_[2] - vector1_[2] * vector2_[0];
-      float D = (-A) * points[i_0][0] + points[i_0][1] * (-B) + points[i_0][2] * (-C);
+    //   // Cálculo de la distancia del plano al cuarto punto
+    //   float d = abs(A * points[i_3][0] + B * points[i_3][1] + points[i_3][2] + D) / (sqrt(pow(A, 2) + pow(B, 2) + pow(C, 2)));
 
-      // Cálculo de la distancia del plano al cuarto punto
-      float d = abs(A * points[i_3][0] + B * points[i_3][1] + points[i_3][2] + D) / (sqrt(pow(A, 2) + pow(B, 2) + pow(C, 2)));
+    //   // Si la distancia es menor que la anterior, asigna los vectores actuales a los calculados
+    //   if(d < d_min)
+    //   {
+    //     d_min = d;
+    //     vector1 = vector1_;
+    //     vector2 = vector2_;
+    //     vector3 = vector3_;
+    //   }
+    // }
 
-      // Si la distancia es menor que la anterior, asigna los vectores actuales a los calculados
-      if(d < d_min)
-      {
-        d_min = d;
-        vector1 = vector1_;
-        vector2 = vector2_;
-      }
-    }
 
-    // Cálculo del vector normal y su inverso
-    std::vector<double> dirVectorX {vector1[1]*vector2[2] - vector1[2]*vector2[1], vector1[2]*vector2[0] - vector1[0]*vector2[2], vector2[1]*vector1[0] - vector2[0]*vector1[1]};
-    if(dirVectorX[2] > 0){
-      dirVectorX[0] = dirVectorX[0] * -1;
-      dirVectorX[1] = dirVectorX[1] * -1;
-      dirVectorX[2] = dirVectorX[2] * -1;
-    }
+    // Obtiene sus módulos
+    float mod1 = sqrt(pow(vector1[0], 2) + pow(vector1[1], 2) + pow(vector1[2], 2));
+    float mod2 = sqrt(pow(vector2[0], 2) + pow(vector2[1], 2) + pow(vector2[2], 2));
+    float mod3 = sqrt(pow(vector3[0], 2) + pow(vector3[1], 2) + pow(vector3[2], 2));
 
-    // Construcción del vector Y de la base
-    std::vector<double> vectorY {graspAndMiddlePointsWorldFrame[0][0]-graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][0], 
-                                graspAndMiddlePointsWorldFrame[0][1]-graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][1], 
-                                graspAndMiddlePointsWorldFrame[0][2]-graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][2]}; 
+    // Redondea los módulos
+    mod1 = round(mod1 * 10000) / 10000.0;
+    mod2 = round(mod2 * 10000) / 10000.0;
+    mod3 = round(mod3 * 10000) / 10000.0;
 
-    // Construcción del vector Z de la base    
-    std::vector<double> vectorZ {dirVectorX[1]*vectorY[2]-vectorY[1]*dirVectorX[2], dirVectorX[2]*vectorY[0]-dirVectorX[0]*vectorY[2], dirVectorX[0]*vectorY[1]-vectorY[0]*dirVectorX[1]};
-        
+    std::cout<<"V1: "<<vector1[0]<<" "<<vector1[1]<<" "<<vector1[2]<<std::endl;
+    std::cout<<"V2: "<<vector2[0]<<" "<<vector2[1]<<" "<<vector2[2]<<std::endl;
+    std::cout<<"V3: "<<vector3[0]<<" "<<vector3[1]<<" "<<vector3[2]<<std::endl<<std::endl<<std::endl;
     
-    // Módulo
+
+
+    std::vector<double> vectorX {-(vector1[1]*vector2[2] - vector1[2]*vector2[1]), -(vector1[2]*vector2[0] - vector1[0]*vector2[2]), -(vector2[1]*vector1[0] - vector2[0]*vector1[1])};
+    if(vectorX[2] > 0){
+      vectorX[0] = vectorX[0] * -1;
+      vectorX[1] = vectorX[1] * -1;
+      vectorX[2] = vectorX[2] * -1;
+    }
+
+    
+    /*std::cout<<"Isolated point: "<<graspAndMiddlePointsWorldFrame[0][0]<<" "<<graspAndMiddlePointsWorldFrame[0][1]<<" "<<graspAndMiddlePointsWorldFrame[0][2]<<std::endl;
+    std::cout<<"Middle point: "<<graspAndMiddlePointsWorldFrame[3][0]<<" "<<graspAndMiddlePointsWorldFrame[3][1]<<" "<<graspAndMiddlePointsWorldFrame[3][2]<<std::endl;
+    std::cout<<"Middle point: "<<graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][0]<<" "<<graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][1]<<" "<<graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][2]<<std::endl;*/
+    
+    std::vector<double> vectorY {(*graspAndMiddlePointsWorldFrame)[0][0]-(*graspAndMiddlePointsWorldFrame)[graspAndMiddlePointsWorldFrame->size()-1][0], 
+                                 (*graspAndMiddlePointsWorldFrame)[0][1]-(*graspAndMiddlePointsWorldFrame)[graspAndMiddlePointsWorldFrame->size()-1][1],   
+                                (*graspAndMiddlePointsWorldFrame)[0][2]-(*graspAndMiddlePointsWorldFrame)[graspAndMiddlePointsWorldFrame->size()-1][2]}; 
+    
+    
+    // Si hay un módulo que es muy pequeño quiere decir que hay al menos dos puntos similares, por lo que coge la
+    //   la vertical del objeto como vector normal al plano
+    if(mod1 == 0 or mod2 == 0 or mod3 == 0)
+    {
+      vectorX[0] = 0;
+      vectorX[1] = 0;
+      vectorX[2] = -1;
+
+      vectorY[2] = 0;
+    }
+
+    std::vector<double> vectorZ {vectorX[1]*vectorY[2]-vectorY[1]*vectorX[2], vectorX[2]*vectorY[0]-vectorX[0]*vectorY[2], vectorX[0]*vectorY[1]-vectorY[0]*vectorX[1]};
+    
+    //std::cout<<"Final vector: "<<vectorZ[0]<<" "<<vectorZ[1]<<" "<<vectorZ[2]<<std::endl;
+    
     double modX, modY, modZ;
-    modX = sqrt(dirVectorX[0]*dirVectorX[0]+dirVectorX[1]*dirVectorX[1]+dirVectorX[2]*dirVectorX[2]);
+    modX = sqrt(vectorX[0]*vectorX[0]+vectorX[1]*vectorX[1]+vectorX[2]*vectorX[2]);
     modY = sqrt(vectorY[0]*vectorY[0]+vectorY[1]*vectorY[1]+vectorY[2]*vectorY[2]);
     modZ = sqrt(vectorZ[0]*vectorZ[0]+vectorZ[1]*vectorZ[1]+vectorZ[2]*vectorZ[2]);
     
-    // Normalizar
     for(int i=0;i<3; i++){
-      dirVectorX [i]=  dirVectorX[i]/modX;
+      vectorX [i]=  vectorX[i]/modX;
       vectorY [i]=  vectorY[i]/modY;
       vectorZ [i]=  vectorZ[i]/modZ;
     }
 
-    // -------- Fin del cálculo -------
-    std::cout<<"Final vector 1: "<<dirVectorX[0]<<" "<<dirVectorX[1]<<" "<<dirVectorX[2]<<std::endl;
+    
+
+    std::cout<<"Final vector 1: "<<vectorX[0]<<" "<<vectorX[1]<<" "<<vectorX[2]<<std::endl;
     std::cout<<"Final vector 2: "<<vectorY[0]<<" "<<vectorY[1]<<" "<<vectorY[2]<<std::endl;
     std::cout<<"Final vector 3: "<<vectorZ[0]<<" "<<vectorZ[1]<<" "<<vectorZ[2]<<std::endl;
-  
+    
+    
 
+    std::fstream my_file;
+    my_file.open(saveFilesPath+std::to_string(actualObject)+"_info.txt", std::ios::app);
+    if (!my_file){
+      ROS_INFO("ERROR: file was not created.");
+    }
+    else{
+      my_file<<"Final vector 1: "<<vectorX[0]<<" "<<vectorX[1]<<" "<<vectorX[2]<<std::endl; 
+      my_file<<"Final vector 2: "<<vectorY[0]<<" "<<vectorY[1]<<" "<<vectorY[2]<<std::endl;
+      my_file<<"Final vector 3: "<<vectorZ[0]<<" "<<vectorZ[1]<<" "<<vectorZ[2]<<std::endl;  
+      my_file.close();
+    }  
+    
     // Broadcast this axis system as objectAxis
     tf::TransformBroadcaster br;
     std::vector<Eigen::Vector3d> pointWorld;
     tf::Transform transformFrames;
     tf::Quaternion qM;    
-    Eigen::Matrix3d matAux;
+    Eigen::Matrix3d matAux, matAux_, matAux_2;
     
     transformReceived = false;
     
     // We have a bias of +45 in x respect to objectAxis. Respect to base_link is in z -45
-    // Eigen::Matrix3d rotneg135x;
-    // rotneg135x << 1, 0, 0, 0, cos(135*M_PI/180.0), -sin(135*M_PI/180.0), 0, sin(135*M_PI/180.0), cos(135*M_PI/180.0);
-    // Eigen::Vector3d endLinkX, endLinkY, endLinkZ;
-    // endLinkX << dirVectorX[0], dirVectorX[1], dirVectorX[2];
-    // endLinkX = rotneg135x*endLinkX;
-    // endLinkY << vectorY[0], vectorY[1], vectorY[2];
-    // endLinkY = rotneg135x*endLinkY;
-    // endLinkZ << vectorZ[0], vectorZ[1], vectorZ[2];
-    // endLinkZ = rotneg135x*endLinkZ;
-
-    // We have a bias of +45 in x respect to objectAxis. Respect to base_link is in z -45
     Eigen::Matrix3d rotneg45z;
-    rotneg45z << cos(-45*M_PI/180), -sin(-45*M_PI/180), 0, sin(-45*M_PI/180), cos(-45*M_PI/180), 0, 0, 0, 1;
+    rotneg45z << cos(45*M_PI/180), -sin(45*M_PI/180), 0, sin(45*M_PI/180), cos(45*M_PI/180), 0, 0, 0, 1;
     Eigen::Vector3d endLinkX, endLinkY, endLinkZ;
-    endLinkX << dirVectorX[0], dirVectorX[1], dirVectorX[2];
-    endLinkX = rotneg45z*endLinkX;
+    endLinkX << -vectorZ[0], -vectorZ[1], -vectorZ[2];
     endLinkY << vectorY[0], vectorY[1], vectorY[2];
-    endLinkY = rotneg45z*endLinkY;
-    endLinkZ << vectorZ[0], vectorZ[1], vectorZ[2];
-    endLinkZ = rotneg45z*endLinkZ;
+    endLinkZ << vectorX[0], vectorX[1], vectorX[2];
+
+    Eigen::Matrix3d rotpos180z, rotpos90y, rotneg90x, rotpos90x;
+    rotpos180z << cos(180*M_PI/180), -sin(180*M_PI/180), 0, sin(180*M_PI/180), cos(180*M_PI/180), 0, 0, 0, 1;
+    rotpos90y << cos(90*M_PI/180), 0, sin(90*M_PI/180), 0, 1, 0, -sin(90*M_PI/180), 0, cos(90*M_PI/180);
+    rotneg90x << 1, 0, 0, 0, cos(-90*M_PI/180), -sin(-90*M_PI/180), 0, sin(-90*M_PI/180), cos(-90*M_PI/180);
+    rotpos90x << 1, 0, 0, 0, cos(90*M_PI/180), -sin(90*M_PI/180), 0, sin(90*M_PI/180), cos(90*M_PI/180);
+
+    // endLinkX = rotneg90x*endLinkX;
+    // endLinkY = rotneg90x*endLinkY;
+    // endLinkZ = rotneg90x*endLinkZ;
+
+    // endLinkX = rotpos90x*endLinkX;
+    // endLinkY = rotpos90x*endLinkY;
+    // endLinkZ = rotpos90x*endLinkZ;
+
+    endLinkX = endLinkX;
+    endLinkY = endLinkZ;
+    endLinkZ = -endLinkY;
+
+    // endLinkX = rotpos90y*endLinkX;
+    // endLinkY = rotpos90y*endLinkY;
+    // endLinkZ = rotpos90y*endLinkZ;
+    // endLinkX = rotneg45z*endLinkX;
+    // endLinkY = rotneg45z*endLinkY;
+    // endLinkZ = rotneg45z*endLinkZ;
+    
+
+    // endLinkX = rotpos180z*endLinkX;
+    // endLinkY = rotpos180z*endLinkY;
+    // endLinkZ = rotpos180z*endLinkZ;
     
     matAux << endLinkX[0], endLinkY[0], endLinkZ[0], endLinkX[1], endLinkY[1], endLinkZ[1], endLinkX[2], endLinkY[2], endLinkZ[2];
+
+
+
     Eigen::Quaterniond qtfAux(matAux);
     tf::Quaternion qtfDef(qtfAux.x(), qtfAux.y(), qtfAux.z(), qtfAux.w()); 
     
-    transformFrames.setOrigin(tf::Vector3(graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][0], graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][1], graspAndMiddlePointsWorldFrame[graspAndMiddlePointsWorldFrame.size()-1][2]));
-    transformFrames.setRotation(qtfDef);    
-    
+    transformFrames.setOrigin(tf::Vector3((*graspAndMiddlePointsWorldFrame)[graspAndMiddlePointsWorldFrame->size()-1][0], (*graspAndMiddlePointsWorldFrame)[graspAndMiddlePointsWorldFrame->size()-1][1], (*graspAndMiddlePointsWorldFrame)[graspAndMiddlePointsWorldFrame->size()-1][2]));
+    transformFrames.setRotation(qtfDef);   
+
+    std::cout<<"\n\n\n AAAAAAAAAAAAAAAAAa"<<std::endl;
+    std::cout<<qtfAux.x()<<std::endl;
+    std::cout<<qtfAux.y()<<std::endl;
+    std::cout<<qtfAux.z()<<std::endl;
+    std::cout<<qtfAux.w()<<std::endl;
+    std::cout<<"\n\n\nAAAAAAAAAAAAAAAAaAAA"<<std::endl;
+
+
     std::thread t1(task1, nh, loop_rate, transformFrames, br);
     
     // Set two points in new axis system and get its position in world
     tf::Stamped<tf::Point> pointGrasp, pointPreGrasp;
-    pointGrasp.setX(-0.10);
+    pointGrasp.setZ(-0.075); //-0.075
     pointGrasp.setY(0);
-    pointGrasp.setZ(0);
+    pointGrasp.setX(0.0);
     pointGrasp.frame_id_ = "objectAxis";
     
-    pointPreGrasp.setX(-0.35);
+    pointPreGrasp.setZ(-0.075); //-0.075
     pointPreGrasp.setY(0);
-    pointPreGrasp.setZ(0);
+    pointPreGrasp.setX(0.0);
     pointPreGrasp.frame_id_ = "objectAxis";
+
     
     tf::TransformListener listener;
     listener.waitForTransform("base_link", "objectAxis", ros::Time(0), ros::Duration(3.0));
     
-    Eigen::Vector3d graspingPose = transformPoint(pointGrasp, "objectAxis", "world");
-    Eigen::Vector3d preGraspingPose = transformPoint(pointPreGrasp, "objectAxis", "world");
+    Eigen::Vector3d graspingPose = transformPoint(pointGrasp, "objectAxis", "base_link");
+    Eigen::Vector3d preGraspingPose = transformPoint(pointPreGrasp, "objectAxis", "base_link");
+
+    graspingPose[2] += 0.145; // 0.08
+    preGraspingPose[2] += 0.2; // 0.35
+
+
+    // Eigen::Vector3d point_0 = transformPoint((*graspAndMiddlePointsWorldFrame)[0], "objectAxis", "base_link");
+    // Eigen::Vector3d point_1 = transformPoint((*graspAndMiddlePointsWorldFrame)[1], "objectAxis", "base_link");
+    // Eigen::Vector3d point_2 = transformPoint((*graspAndMiddlePointsWorldFrame)[2], "objectAxis", "base_link");
+
+    // graspAndMiddlePointsWorldFrame[0][0] = point_0[0];
+    // graspAndMiddlePointsWorldFrame[0][1] = point_0[1];
+    // graspAndMiddlePointsWorldFrame[0][2] = point_0[2];
+
+    // graspAndMiddlePointsWorldFrame[1][0] = point_1[0];
+    // graspAndMiddlePointsWorldFrame[1][1] = point_1[1];
+    // graspAndMiddlePointsWorldFrame[1][2] = point_1[2];
+
+    // graspAndMiddlePointsWorldFrame[2][0] = point_2[0];
+    // graspAndMiddlePointsWorldFrame[2][1] = point_2[1];
+    // graspAndMiddlePointsWorldFrame[2][2] = point_2[2];
+
+
+    // Sustituir esto por lo de arriba?
+    // for(int j = 0; j < 3; j++)
+    // {
+    //   (*graspAndMiddlePointsWorldFrame)[0][j] = point_0[j];
+    //   (*graspAndMiddlePointsWorldFrame)[1][j] = point_1[j];
+    //   (*graspAndMiddlePointsWorldFrame)[2][j] = point_2[j];
+    // }
     
+
+    move_group_interface_arm->setPoseReferenceFrame("base_link");
+
     // Show and save points to future trajectory
     geometry_msgs::Pose desiredGrasp, desiredPreGrasp;
     desiredGrasp.position.x = preGraspingPose[0];
@@ -475,11 +596,13 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     desiredPreGrasp.orientation.z = qtfDef.z();
     desiredPreGrasp.orientation.w = qtfDef.w();
     desiredPoints.push_back(desiredPreGrasp);
+
+
     
     for(int i=0;i<4;i++){    
     
       visualization_msgs::Marker axis1;
-      axis1.header.frame_id = "world";
+      axis1.header.frame_id = "base_link";
       axis1.header.stamp = ros::Time();
       axis1.id = *identifierMarkerRviz;
       axis1.type = visualization_msgs::Marker::ARROW;
@@ -495,9 +618,9 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
       axis1.color.a = 1.0; // Don't forget to set the alpha!
       if (i==0){
         axis1.color.r = 1.0f;
-        p1.x = preGraspingPose[0]+(endLinkX[0]);
-        p1.y = preGraspingPose[1]+(endLinkX[1]);
-        p1.z = preGraspingPose[2]+(endLinkX[2]);
+        p1.x = preGraspingPose[0]+(endLinkZ[0]);
+        p1.y = preGraspingPose[1]+(endLinkZ[1]);
+        p1.z = preGraspingPose[2]+(endLinkZ[2]);
         axis1.points.push_back(p1);
       } 
       else if(i==1){
@@ -509,9 +632,9 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
       }
       else{
         axis1.color.b = 1.0f;  
-        p1.x = preGraspingPose[0]+(endLinkZ[0]);
-        p1.y = preGraspingPose[1]+(endLinkZ[1]);
-        p1.z = preGraspingPose[2]+(endLinkZ[2]);
+        p1.x = preGraspingPose[0]+(endLinkX[0]);
+        p1.y = preGraspingPose[1]+(endLinkX[1]);
+        p1.z = preGraspingPose[2]+(endLinkX[2]);
         axis1.points.push_back(p1); 
       }
  
@@ -525,7 +648,7 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     for(int i=0;i<4;i++){    
     
       visualization_msgs::Marker axis1;
-      axis1.header.frame_id = "world";
+      axis1.header.frame_id = "base_link";
       axis1.header.stamp = ros::Time();
       axis1.id = *identifierMarkerRviz;
       axis1.type = visualization_msgs::Marker::ARROW;
@@ -541,9 +664,9 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
       axis1.color.a = 1.0; // Don't forget to set the alpha!
       if (i==0){
         axis1.color.r = 1.0f;
-        p1.x = graspingPose[0]+(endLinkX[0]);
-        p1.y = graspingPose[1]+(endLinkX[1]);
-        p1.z = graspingPose[2]+(endLinkX[2]);
+        p1.x = graspingPose[0]+(endLinkZ[0]);
+        p1.y = graspingPose[1]+(endLinkZ[1]);
+        p1.z = graspingPose[2]+(endLinkZ[2]);
         axis1.points.push_back(p1);
       } 
       else if(i==1){
@@ -555,9 +678,9 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
       }
       else{
         axis1.color.b = 1.0f;  
-        p1.x = graspingPose[0]+(endLinkZ[0]);
-        p1.y = graspingPose[1]+(endLinkZ[1]);
-        p1.z = graspingPose[2]+(endLinkZ[2]);
+        p1.x = graspingPose[0]+(endLinkX[0]);
+        p1.y = graspingPose[1]+(endLinkX[1]);
+        p1.z = graspingPose[2]+(endLinkX[2]);
         axis1.points.push_back(p1); 
       }
  
@@ -569,191 +692,222 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     }
     
     // Move to that poses we said before
-    (*move_group_interface_arm).setPlanningTime(10.0);
-    (*move_group_interface_arm).setGoalTolerance(0.001);
+    (*move_group_interface_arm).setPlanningTime(5.0);
+    (*move_group_interface_arm).setGoalTolerance(0.005);
+    (*move_group_interface_arm).setStartStateToCurrentState ();
     std::cout << "MOVE TO 'PRE_GRASP' POSITION" << std::endl;
-    *inputChar = ' ';
-    
+
+
+    (*move_group_interface_arm).setJointValueTarget((*move_group_interface_arm).getNamedTargetValues("grasping"));
+    (*move_group_interface_arm).plan(*my_plan_arm);
+    (*move_group_interface_arm).execute(*my_plan_arm);
+
     std::vector<geometry_msgs::Pose> waypoints;
     waypoints.push_back(desiredPoints[0]);
     waypoints.push_back(desiredPoints[1]);
     moveit_msgs::RobotTrajectory trajectory;
 
-    do{
-      
-      const double jump_threshold = 0.0;
-      const double eef_step = 0.005;
-      double fraction = (*move_group_interface_arm).computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory);
-      
-      // std::cout<<"#######################\n#####################\n";
-      // std::cout<<"PLANNING PREV\n";
-      // std::cout<<"#######################\n#####################\n";
-      // (*move_group_interface_arm).setPoseTarget(desiredPoints[0]);
-      // std::cout << "Preparing trajectory..." << std::endl;
-      // (*move_group_interface_arm).plan(*my_plan_arm);
-      // std::cout<<"#######################\n#####################\n";
-      // std::cout<<"PLANNING PREV\n";
-      // std::cout<<"#######################\n#####################\n";
-
-      std::cout << "Insert 'n' to compute a new trajectory" << std::endl;
-      std::cout << "Insert 's' to save this trajectory" << std::endl;
-      std::cout << "Insert other letter to escape" << std::endl;
-      std::cin >> *inputChar;
-    } while(*inputChar != 'n' and *inputChar != 's');
-
-    if(*inputChar == 's'){
-      std::cout << "Executing the trajectory..." << std::endl;
-      //(*move_group_interface_arm).execute(*my_plan_arm);
-      (*move_group_interface_arm).execute(trajectory);
-
-      // Reset '*inputChar' flag
-      *inputChar = ' ';         
-    }
-  
-    std::this_thread::sleep_for(std::chrono::seconds(2));  
-    
-    std::cout << "MOVE TO 'GRASP' POSITION" << std::endl;
-
-    // std::vector<geometry_msgs::Pose> waypoints_;
-    // waypoints_.push_back(desiredPoints[1]);
-    // moveit_msgs::RobotTrajectory trajectory_;
-
     // do{
-    //   const double jump_threshold = 0.0;
-    //   const double eef_step = 0.005;
-    //   double fraction = (*move_group_interface_arm).computeCartesianPath(waypoints_, eef_step, jump_threshold, trajectory_);
       
-    //   // (*move_group_interface_arm).plan(*my_plan_arm);
-    //   // std::cout<<"#######################\n#####################\n";
-    //   // std::cout<<"PLANNING PREV\n";
-    //   // std::cout<<"#######################\n#####################\n";
-    //   // (*move_group_interface_arm).setPoseTarget(desiredPoints[1]);
-    //   // std::cout << "Preparing trajectory..." << std::endl;
-    //   // (*move_group_interface_arm).plan(*my_plan_arm);
-    //   // (*move_group_interface_arm).plan(*my_plan_arm);
-    //   // std::cout<<"#######################\n#####################\n";
-    //   // std::cout<<"PLANNING PREV\n";
-    //   // std::cout<<"#######################\n#####################\n";
+    //   const double jump_threshold = 0.0;
+    //   const double eef_step = 0.001;
 
+    //   std::cout<<"Computing Cartesian Trajectory..."<<std::endl;
+    //   double fraction = (*move_group_interface_arm).computeCartesianPath(waypoints, eef_step, jump_threshold, trajectory);
+    
     //   std::cout << "Insert 'n' to compute a new trajectory" << std::endl;
     //   std::cout << "Insert 's' to save this trajectory" << std::endl;
     //   std::cout << "Insert other letter to escape" << std::endl;
-    //   std::cin >> inputChar;
-    // } while(inputChar == 'n');
+    //   std::cin >> *inputChar;
+    // } while(*inputChar != 'n' and *inputChar != 's');
 
-    // if(inputChar == 's'){
-    //   std::cout << "Executing the trajectory..." << std::endl;
-    //   //(*move_group_interface_arm).execute(*my_plan_arm);
-    //   (*move_group_interface_arm).execute(trajectory_);
-    // }
+    if(*inputChar == 's'){
+      std::cout << "Executing the trajectory..." << std::endl;
+      (*move_group_interface_arm).setStartStateToCurrentState ();
+      (*move_group_interface_arm).execute(trajectory);   
+
+      std::this_thread::sleep_for(std::chrono::seconds(2)); 
+      *inputChar = ' ';      
+    }
+
+     
+
+    else{
+      // Reset '*inputChar' flag
+      *inputChar = ' ';
+
+      do{
+        const double jump_threshold = 0.0;
+        const double eef_step = 0.001;
+        
+        (*move_group_interface_arm).setPoseTarget(desiredPoints[0]);
+        std::cout << "Preparing second trajectory preGrasp point..." << std::endl;
+        (*move_group_interface_arm).plan(*my_plan_arm);
+
+        std::cout << "Insert 'n' to compute a new trajectory" << std::endl;
+        std::cout << "Insert 's' to save this trajectory" << std::endl;
+        std::cout << "Insert other letter to escape" << std::endl;
+        std::cin >> *inputChar;
+      } while(*inputChar != 'n' and *inputChar != 's');
+    
+
+      if(*inputChar == 's'){
+        std::cout << "Executing the trajectory..." << std::endl;
+        (*move_group_interface_arm).execute(*my_plan_arm);
+
+        // Reset '*inputChar' flag
+        *inputChar = ' '; 
+
+        std::this_thread::sleep_for(std::chrono::seconds(2));  
+
+        do{
+          const double jump_threshold = 0.0;
+          const double eef_step = 0.01;
+          
+          (*move_group_interface_arm).setPoseTarget(desiredPoints[1]);
+          std::cout << "Preparing second trajectory Grasping point..." << std::endl;
+          (*move_group_interface_arm).plan(*my_plan_arm);
+          
+          std::cout << "Insert 'n' to compute a new trajectory" << std::endl;
+          std::cout << "Insert 's' to save this trajectory" << std::endl;
+          std::cout << "Insert other letter to escape" << std::endl;
+          std::cin >> inputChar;
+        } while(*inputChar != 'n' and *inputChar != 's');  
+
+        if(*inputChar == 's') 
+        {
+          std::cout << "Executing the trajectory..." << std::endl;
+          (*move_group_interface_arm).execute(*my_plan_arm);
+
+          // Reset '*inputChar' flag
+          *inputChar = ' '; 
+        }     
+      }
+    }
   
     std::this_thread::sleep_for(std::chrono::seconds(2));   
     
     // Rejoin programs
     transformReceived = true;
     t1.join();
+    
 }
 
-void contactCallback(const gazebo_msgs::ContactsStateConstPtr &contact1, const gazebo_msgs::ContactsStateConstPtr &contact2, const gazebo_msgs::ContactsStateConstPtr &contactMiddle){
 
-  if (contact1->states.size() != 0 and contact2->states.size() != 0 and contactMiddle->states.size() != 0){
-    contact = true;
-    std::cout<<"DETECTO TODOS TRUE!!!";
-  }
+void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInterface *move_group_interface_thumb, moveit::planning_interface::MoveGroupInterface *move_group_interface_finger_1, moveit::planning_interface::MoveGroupInterface *move_group_interface_finger_2, moveit::planning_interface::MoveGroupInterface *move_group_interface_finger_3, moveit::planning_interface::MoveGroupInterface::Plan *my_plan_arm, std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame){
+
+  geometry_msgs::Pose point_thumb, point_finger_1, point_finger_2, point_finger_3;
+  // point_thumb.position.x = graspAndMiddlePointsWorldFrame[0][0];
+  // point_thumb.position.y = graspAndMiddlePointsWorldFrame[0][1];
+  // point_thumb.position.z = graspAndMiddlePointsWorldFrame[0][2];
+  // point_thumb.orientation.x = 0;
+  // point_thumb.orientation.y = 0;
+  // point_thumb.orientation.z = -1;
+  // point_thumb.orientation.w = 1;
+
+
+
+
   
-  if (contact1->states.size() != 0){
-    contact1_b = true;
-    std::cout<<"DETECTO 1 TRUE!!!";
-  }
-  else{
-    contact1_b = false;
-    contact1_prev = false;
-  }
+
+  move_group_interface_thumb->setPoseReferenceFrame("base_link");
+  move_group_interface_finger_1->setPoseReferenceFrame("base_link");
+  move_group_interface_finger_2->setPoseReferenceFrame("base_link");
+  move_group_interface_finger_3->setPoseReferenceFrame("base_link");
+
+
+  Eigen::Vector3d endLinkX, endLinkY, endLinkZ;
+
+  geometry_msgs::Pose pose_finger_1 = move_group_interface_finger_1->getCurrentPose().pose;
+
+  tf::Quaternion q(pose_finger_1.orientation.x, pose_finger_1.orientation.y, pose_finger_1.orientation.z, pose_finger_1.orientation.w);
+
+  // tfScalar yaw, pitch, roll;
+  tf::Matrix3x3 mat(q);
+  // mat.getEulerYPR(&yaw, &pitch, &roll);
+
+  endLinkX << mat[0][0], mat[0][1], mat[0][2];//-vectorZ[0], -vectorZ[1], -vectorZ[2];
+  endLinkY << mat[1][0], mat[1][1], mat[1][2];//vectorY[0], vectorY[1], vectorY[2];
+  endLinkZ << mat[2][0], mat[2][1], mat[2][2];//vectorX[0], vectorX[1], vectorX[2];
+
+  Eigen::Matrix3d rotpos180z, rotpos90y;
+  Eigen::Matrix3d matAux;
+  rotpos90y << cos(90*M_PI/180), 0, sin(90*M_PI/180), 0, 1, 0, -sin(90*M_PI/180), 0, cos(90*M_PI/180);
+
+    
+  endLinkX = rotpos90y*endLinkX;
+  endLinkY = rotpos90y*endLinkY;
+  endLinkZ = rotpos90y*endLinkZ;
+
+  matAux << endLinkY[0], endLinkX[0], -endLinkZ[0], endLinkY[1], endLinkX[1], -endLinkZ[1], endLinkY[2], endLinkX[2], -endLinkZ[2];
+
+  Eigen::Quaterniond qtfAux(matAux);
+
+  // tf::Transform trans;
+  // tf::TransformBroadcaster br;
+
+  // trans.setOrigin(tf::Vector3(graspAndMiddlePointsWorldFrame[1][0], graspAndMiddlePointsWorldFrame[1][1], graspAndMiddlePointsWorldFrame[1][2]));
+  // trans.setRotation(tf::Quaternion(qtfAux.x(), qtfAux.y(), qtfAux.z(), qtfAux.w()));
+
+  // ros::Rate loop_rate(10);
+
+  // while(nh.ok()){
+  //   br.sendTransform(tf::StampedTransform(trans, ros::Time::now(), "base_link", "objectAxis_")); 
+  //   /*br.sendTransform(tf::StampedTransform(transformFrames[1], ros::Time::now(), "world", "robotiq_finger_2_halfLink"));
+  //   br.sendTransform(tf::StampedTransform(transformFrames[2], ros::Time::now(), "world", "robotiq_finger_middle_halfLink")); */
+    
+  //   ros::spinOnce();   
+  //   loop_rate.sleep(); 
+  // }
   
-  if (contact2->states.size() != 0){
-    contact2_b = true;
-    std::cout<<"DETECTO 2 TRUE!!!";
-  }
-  else{
-    contact2_b = false;
-    contact2_prev = false;
-  }
+
+  point_finger_1.position.x = graspAndMiddlePointsWorldFrame[1][0];
+  point_finger_1.position.y = graspAndMiddlePointsWorldFrame[1][1];
+  point_finger_1.position.z = graspAndMiddlePointsWorldFrame[1][2];
+  point_finger_1.orientation.x = qtfAux.x();//0.0;// qtf.x();
+  point_finger_1.orientation.y = qtfAux.y();//1;// qtf.y();
+  point_finger_1.orientation.z = qtfAux.z();//0.0;// qtf.z();
+  point_finger_1.orientation.w = qtfAux.w();//0.0;// qtf.w();
+
+  point_finger_2.position.x = graspAndMiddlePointsWorldFrame[2][0];
+  point_finger_2.position.y = graspAndMiddlePointsWorldFrame[2][1];
+  point_finger_2.position.z = graspAndMiddlePointsWorldFrame[2][2];
+  point_finger_2.orientation.x = qtf.x();
+  point_finger_2.orientation.y = qtf.y();
+  point_finger_2.orientation.z = qtf.z();
+  point_finger_2.orientation.w = qtf.w();
+
+  point_finger_3.position.x = graspAndMiddlePointsWorldFrame[3][0];
+  point_finger_3.position.y = graspAndMiddlePointsWorldFrame[3][1];
+  point_finger_3.position.z = graspAndMiddlePointsWorldFrame[3][2];
+  point_finger_3.orientation.x = qtf.x();
+  point_finger_3.orientation.y = qtf.y();
+  point_finger_3.orientation.z = qtf.z();
+  point_finger_3.orientation.w = qtf.w();
+
+  (*move_group_interface_finger_1).setPlanningTime(5.0);
+  (*move_group_interface_finger_1).setGoalTolerance(0.005);
+
+  (*move_group_interface_finger_2).setPlanningTime(5.0);
+  (*move_group_interface_finger_2).setGoalTolerance(0.005);
+
+  (*move_group_interface_finger_3).setPlanningTime(5.0);
+  (*move_group_interface_finger_3).setGoalTolerance(0.005);
+
+
+  const double jump_threshold = 0.0;
+  const double eef_step = 0.001;
+
+  (*move_group_interface_finger_1).setPoseTarget(point_finger_1);
+  (*move_group_interface_finger_1).plan(*my_plan_arm);
+
+
+  (*move_group_interface_finger_1).execute(*my_plan_arm);
   
-  if (contactMiddle->states.size() != 0){
-    contact3_b = true;
-    std::cout<<"DETECTO MIDDLE TRUE!!!";
-  }
-  else{
-    contact3_b = false;
-    contact3_prev = false;
-  }
+  
 }
 
-void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInterface *move_group_interface_gripper, moveit::planning_interface::MoveGroupInterface::Plan *my_plan_arm){
-
-  // Subscribe to sensor contact messages
-  contact = false;
-  contact1_b = false;
-  contact2_b = false;
-  contact3_b = false;
-  contact1_prev = false;
-  contact2_prev = false;
-  contact3_prev = false;
-  message_filters::Subscriber<gazebo_msgs::ContactsState> finger1Contact(nh, "/aurova/robotiq_finger_1_link_3_contact_sensor", 10);
-  message_filters::Subscriber<gazebo_msgs::ContactsState> finger2Contact(nh, "/aurova/robotiq_finger_2_link_3_contact_sensor", 10);
-  message_filters::Subscriber<gazebo_msgs::ContactsState> fingerMiddleContact(nh, "/aurova/robotiq_finger_middle_link_3_contact_sensor", 10);
-    
-  typedef message_filters::sync_policies::ApproximateTime<gazebo_msgs::ContactsState, gazebo_msgs::ContactsState, gazebo_msgs::ContactsState> MySyncPolicy;
-  message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), finger1Contact, finger2Contact, fingerMiddleContact);
-  sync.registerCallback(boost::bind(&contactCallback, _1, _2, _3));
-    
-  // Close gripper until collision
-  std::cout << "GRASPING OBJECT" << std::endl;
-  while(contact == false){
-    
-    geometry_msgs::PoseStamped curr_pose = (*move_group_interface_gripper).getCurrentPose();
-    std::vector<double> joint_values = (*move_group_interface_gripper).getCurrentJointValues();
-    std::vector<std::string> joint_names = (*move_group_interface_gripper).getJoints();
-        
-    for (int i=0;i<joint_values.size(); i++){
-      if(i == 0 and not contact1_prev)
-      {
-        joint_values[i] = joint_values[i]+0.0174533*5;
-        contact1_prev = contact1_b;
-      }
-
-      else if(i == 3)
-      {
-        joint_values[i] = joint_values[i]+0.0174533*5;
-        contact2_prev = contact2_b;
-      }
-
-      else if(i == 6)
-      {
-        joint_values[i] = joint_values[i]+0.0174533*5;
-        contact3_prev = contact3_b;
-      }
-      // if (i==0 or i==3 or i==6){
-      //   joint_values[i] = joint_values[i]+0.0174533*5;
-      // }
-    }
-       
-    (*move_group_interface_gripper).setJointValueTarget(joint_values);
-    (*move_group_interface_gripper).plan(*my_plan_arm);
-    (*move_group_interface_gripper).execute(*my_plan_arm);
-  
-    std::this_thread::sleep_for(std::chrono::seconds(2));       
-  }   
-    
-  if (contact == true){
-    finger1Contact.unsubscribe();
-    finger2Contact.unsubscribe();
-    fingerMiddleContact.unsubscribe();                
-  }
-  
-}
-
-void armUpAndReset(moveit::planning_interface::MoveGroupInterface *move_group_interface_arm, moveit::planning_interface::MoveGroupInterface::Plan *my_plan_arm, std::string saveFilesPath, int actualObject, moveit::planning_interface::MoveGroupInterface *move_group_interface_gripper, int identifierMarkerRviz, ros::Publisher vis_pub, std::vector<visualization_msgs::Marker> *markerRvizVector){
+void armUpAndReset(moveit::planning_interface::MoveGroupInterface *move_group_interface_arm, moveit::planning_interface::MoveGroupInterface::Plan *my_plan_arm, std::string saveFilesPath, int actualObject, moveit::planning_interface::MoveGroupInterface *move_group_interface_thumb, moveit::planning_interface::MoveGroupInterface *move_group_interface_finger_1, moveit::planning_interface::MoveGroupInterface *move_group_interface_finger_2, moveit::planning_interface::MoveGroupInterface *move_group_interface_finger_3, int identifierMarkerRviz, ros::Publisher vis_pub, std::vector<visualization_msgs::Marker> *markerRvizVector){
 
   (*move_group_interface_arm).setPlanningTime(10.0);
   (*move_group_interface_arm).setGoalTolerance(0.001);
@@ -804,13 +958,13 @@ void armUpAndReset(moveit::planning_interface::MoveGroupInterface *move_group_in
     }      
   } while(decision == false);
     
-  (*move_group_interface_gripper).setPlanningTime(10.0);
-  (*move_group_interface_gripper).setGoalTolerance(0.001);
-  std::cout << "MOVE TO 'RESET' POSITION" << std::endl;
+  // (*move_group_interface_gripper).setPlanningTime(10.0);
+  // (*move_group_interface_gripper).setGoalTolerance(0.001);
+  // std::cout << "MOVE TO 'RESET' POSITION" << std::endl;
 
-  (*move_group_interface_gripper).setJointValueTarget((*move_group_interface_gripper).getNamedTargetValues("open"));
-  (*move_group_interface_gripper).plan(*my_plan_arm);
-  (*move_group_interface_gripper).execute(*my_plan_arm); 
+  // (*move_group_interface_gripper).setJointValueTarget((*move_group_interface_gripper).getNamedTargetValues("open"));
+  // (*move_group_interface_gripper).plan(*my_plan_arm);
+  // (*move_group_interface_gripper).execute(*my_plan_arm); 
   
   std::this_thread::sleep_for(std::chrono::seconds(2));
   
@@ -849,10 +1003,17 @@ int main(int argc, char *argv[]){
   
   // Nombres de los grupos a controlar
   static const std::string PLANNING_GROUP_ARM = "arm";
-  static const std::string PLANNING_GROUP_GRIPPER = "gripper";
+  static const std::string PLANNING_GROUP_THUMB = "thumb";
+  static const std::string PLANNING_GROUP_FINGER_1 = "finger_1";
+  static const std::string PLANNING_GROUP_FINGER_2 = "finger_2";
+  static const std::string PLANNING_GROUP_FINGER_3 = "finger_3";
   
   moveit::planning_interface::MoveGroupInterface move_group_interface_arm(PLANNING_GROUP_ARM);
-  moveit::planning_interface::MoveGroupInterface move_group_interface_gripper(PLANNING_GROUP_GRIPPER);
+  moveit::planning_interface::MoveGroupInterface move_group_interface_thumb(PLANNING_GROUP_THUMB);
+  moveit::planning_interface::MoveGroupInterface move_group_interface_finger_1(PLANNING_GROUP_FINGER_1);
+  moveit::planning_interface::MoveGroupInterface move_group_interface_finger_2(PLANNING_GROUP_FINGER_2);
+  moveit::planning_interface::MoveGroupInterface move_group_interface_finger_3(PLANNING_GROUP_FINGER_3);
+
   
   // Rviz publish things
   ros::Publisher vis_pub = nh.advertise<visualization_msgs::Marker>("visualization_marker", 1);
@@ -886,16 +1047,16 @@ int main(int argc, char *argv[]){
     // Move gripper close to grasp points
     moveit::planning_interface::MoveGroupInterface::Plan my_plan_arm;  
     char inputChar = ' ';
-    moveCloseObject(graspAndMiddlePointsWorldFrame, nh, loop_rate, vis_pub, &move_group_interface_arm, &my_plan_arm, &identifierMarkerRviz, &markerRvizVector, &inputChar);    
+    moveCloseObject(&graspAndMiddlePointsWorldFrame, nh, loop_rate, vis_pub, &move_group_interface_arm, &my_plan_arm, &identifierMarkerRviz, &markerRvizVector, &inputChar, saveFilesPath, actualObject);    
 
     // Close gripper to grasp object
     if(inputChar == ' ')
     {
-      closeGripper(nh, &move_group_interface_gripper, &my_plan_arm);
+      closeGripper(nh, &move_group_interface_thumb, &move_group_interface_finger_1, &move_group_interface_finger_2, &move_group_interface_finger_3, &my_plan_arm, graspAndMiddlePointsWorldFrame);
     }
 
     // Arm up to check if object is grasped and prepare everything for next test
-    armUpAndReset(&move_group_interface_arm, &my_plan_arm, saveFilesPath, actualObject, &move_group_interface_gripper, identifierMarkerRviz, vis_pub, &markerRvizVector);
+    armUpAndReset(&move_group_interface_arm, &my_plan_arm, saveFilesPath, actualObject, &move_group_interface_thumb, &move_group_interface_finger_1, &move_group_interface_finger_2, &move_group_interface_finger_3, identifierMarkerRviz, vis_pub, &markerRvizVector);
     
     // Advertise we have finished
     ros::Publisher finished_pub = nh.advertise<std_msgs::Int32>("/aurova/moveit_grasp_finished", 1);

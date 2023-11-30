@@ -27,12 +27,12 @@
   <group if="$(eval arg('gripper') == '4f')">
     <include file="$(find ur5eRobotiq4f_moveit_config)/launch/demo_gazebo.launch">
       <arg name="paused" value="$(arg paused)"/>
-      <arg name="gazebo_gui" value="$(arg gazebo_gui)"/>
+      <!-- <arg name="gazebo_gui" value="$(arg gazebo_gui)"/> -->
     </include>
   </group>
 
   <!-- Calcula las posiciones y orientaciones aleatorias de los objetos -->
-  <arg name="num_objects" value="28" /> <!-- CAREFUL: objects could be chosen more than once -->
+  <arg name="num_objects" value="1" /> <!-- 28 --><!-- CAREFUL: objects could be chosen more than once -->
   <arg name="objects_dir" value="/daniel/Desktop/evo_pipe/ycb/" />		<!-- Cambiar ruta -->
   <arg name="set_seed" value="0" />
   
@@ -68,8 +68,8 @@
   <!-- 4F params (thumb extend pan): {{0.01, 0.014}, {0.0138, 0.0178}, {0.0178, 0.0225}}-->
   <!-- Guarda puntuacione, puntos e imagenes en la ruta que diga aqui: IMPORTANTE-->
   <arg name="geograspEvo_grip_tip_size" value="25" />
-  
-  <arg name="geograspEvo_set_apertures" value="{{0.01, 0.014}, {0.0138, 0.0178}, {0.0178, 0.0225}}" /> <!-- {mas cercano a 0, min}(dedo negativo), {mas cercano a 0, max} (dedo positivo)-->
+  <!-- {0.062, 0.045}-->
+  <arg name="geograspEvo_set_apertures" value="{{-0.045, -0.045}, {0.0, 0.0}, {0.045, 0.045}}" /> <!-- "{{0.01, 0.014}, {0.0138, 0.0178}, {0.0178, 0.0225}}" -->
   <arg name="geograspEvo_set_number_fingers" value="4" />
   <arg name="geograspEvo_set_unique_mobility" value="0" />
   <arg name="geograspEvo_set_grasps_track" value="5" />

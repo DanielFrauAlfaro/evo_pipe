@@ -513,7 +513,7 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     tf::Stamped<tf::Point> pointGrasp, pointPreGrasp, aux;
     pointGrasp.setX(-0.0); //-0.22
     pointGrasp.setY(0);
-    pointGrasp.setZ(-0.24);
+    pointGrasp.setZ(-0.235);
     pointGrasp.frame_id_ = "objectAxis";
     
     pointPreGrasp.setX(-0.0);
@@ -830,7 +830,7 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
     std::vector<double> joint_values = (*move_group_interface_gripper).getCurrentJointValues();
     std::vector<std::string> joint_names = (*move_group_interface_gripper).getJoints();
 
-    int mult_ini = 4;  
+    int mult_ini = 6;  
     
     for (int i=0;i<joint_values.size(); i++){
       if(i == 0 and not contact1_prev)
