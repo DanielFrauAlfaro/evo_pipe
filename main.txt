@@ -365,3 +365,37 @@ Visualize PCD: https://imagetostl.com/es/ver-pcd-en-linea#google_vignette
 
 
 IMPORTANTE: conectar la RealSense a uno de los puertos USB de detrás del PC, los de delante no funcionan correctamente.
+
+
+
+
+---------------------------------------------------------------------------------------
+En cuanto al RANSAC, funciona pero GeoGrasp modifica la nube de puntos por lo que hay zonas de la nube (objeto) que se eliminan, haciendo imposible que 
+selecciona puntos en esas partes. 
+    Santiago lo está apañando
+
+EXPERIMENTOS EN SIMULACION CON LA DE TRES DEDOS: 
+    se han terminado estos experimentos, por lo menos con los que salen bien.
+    Faltaría hacer experimentos con los fallos aplicando RANSAC
+
+ADAPTACION A 4 DEDOS:
+    Se ha creado el paquete de Moveit y el modelo URDF para la de 4 dedos --> parece que los controladores no están del todo ajustados al 100% pero no pasa
+nada
+    Los dedos se han definido como cadenas cinemáticas separadas
+
+ADAPTACION NODO MOVEIT (pruebas, no estás seguro que funcione):
+    Se han definido los move_groups de los dedos de la mano, que se han pasado a la función de cerrar la pinza
+
+    Se ha cambiado el código por el que estaba con el de los tres dedos con algunas modifcaciones pero añadiendo la estimación del mejor planos 
+        (se podría hacer la media de las normales en vez de coger el mejor plano, por probar coasas)
+
+    Se ha hecho que los puntos que calcula se pasen como referencia en la función MoveCloseObject para poder usarlos en la función de cerrar la pinza. También
+se ha transformado estos puntos para dejarlos referenciados respecto al "base_link" y no respecto al "object"
+
+
+TODOS:
+    Hacer el algoritmo para llevar cada dedo a su punto correspondiente
+    Hacer el modelo de la mano de 4 dedos para GeoGrasp
+    Cambiar como se cogen las coordenadas a la hora de bajar a por el objeto: ahora hay que hacer que baje con el eje Z hacia delante, no hacia abajo
+
+    Comprobar que funciona todo
