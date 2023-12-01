@@ -269,6 +269,18 @@ void task1(ros::NodeHandle nh, ros::Rate loop_rate, tf::Transform transformFrame
   }  
 }
 
+void task2(ros::NodeHandle nh, ros::Rate loop_rate, tf::Transform transformFrames, tf::TransformBroadcaster br){
+    
+  while(nh.ok() && transformReceived==false){
+    br.sendTransform(tf::StampedTransform(transformFrames, ros::Time::now(), "base_link", "objectAxis_")); 
+    /*br.sendTransform(tf::StampedTransform(transformFrames[1], ros::Time::now(), "world", "robotiq_finger_2_halfLink"));
+    br.sendTransform(tf::StampedTransform(transformFrames[2], ros::Time::now(), "world", "robotiq_finger_middle_halfLink")); */
+    
+    ros::spinOnce();   
+    loop_rate.sleep(); 
+  }  
+}
+
 /*void task2(pcl::PointCloud<pcl::PointXYZ> Final, std::vector<Eigen::Vector3d> *pointWorld){
 
   tf::Stamped<tf::Point> point1;
@@ -470,17 +482,32 @@ void moveCloseObject(std::vector<Eigen::Vector3d> *graspAndMiddlePointsWorldFram
     
     // We have a bias of +45 in x respect to objectAxis. Respect to base_link is in z -45
     Eigen::Matrix3d rotneg45z;
-    rotneg45z << cos(45*M_PI/180), -sin(45*M_PI/180), 0, sin(45*M_PI/180), cos(45*M_PI/180), 0, 0, 0, 1;
+    rotneg45z << cos(-45*M_PI/180), -sin(-45*M_PI/180), 0, sin(-45*M_PI/180), cos(-45*M_PI/180), 0, 0, 0, 1;
     Eigen::Vector3d endLinkX, endLinkY, endLinkZ;
     endLinkX << -vectorZ[0], -vectorZ[1], -vectorZ[2];
     endLinkY << vectorY[0], vectorY[1], vectorY[2];
     endLinkZ << vectorX[0], vectorX[1], vectorX[2];
 
-    Eigen::Matrix3d rotpos180z, rotpos90y, rotneg90x, rotpos90x;
+    Eigen::Matrix3d rotpos180z, rotpos90y, rotneg90x, rotpos90x, rotneg45x, rotneg45y;
     rotpos180z << cos(180*M_PI/180), -sin(180*M_PI/180), 0, sin(180*M_PI/180), cos(180*M_PI/180), 0, 0, 0, 1;
     rotpos90y << cos(90*M_PI/180), 0, sin(90*M_PI/180), 0, 1, 0, -sin(90*M_PI/180), 0, cos(90*M_PI/180);
+    rotneg45y << cos(-45*M_PI/180), 0, sin(-45*M_PI/180), 0, 1, 0, -sin(-45*M_PI/180), 0, cos(-45*M_PI/180);
     rotneg90x << 1, 0, 0, 0, cos(-90*M_PI/180), -sin(-90*M_PI/180), 0, sin(-90*M_PI/180), cos(-90*M_PI/180);
     rotpos90x << 1, 0, 0, 0, cos(90*M_PI/180), -sin(90*M_PI/180), 0, sin(90*M_PI/180), cos(90*M_PI/180);
+    rotneg45x << 1, 0, 0, 0, cos(-45*M_PI/180), -sin(-45*M_PI/180), 0, sin(-45*M_PI/180), cos(-45*M_PI/180);
+
+    
+
+    matAux << endLinkX[0], endLinkY[0], endLinkZ[0], endLinkX[1], endLinkY[1], endLinkZ[1], endLinkX[2], endLinkY[2], endLinkZ[2];
+
+    // Eigen::Quaterniond qtfAux_(matAux);
+    // tf::Quaternion qtfDef_(qtfAux_.x(), qtfAux_.y(), qtfAux_.z(), qtfAux_.w()); 
+    
+    // transformFrames.setOrigin(tf::Vector3((*graspAndMiddlePointsWorldFrame)[graspAndMiddlePointsWorldFrame->size()-1][0], (*graspAndMiddlePointsWorldFrame)[graspAndMiddlePointsWorldFrame->size()-1][1], (*graspAndMiddlePointsWorldFrame)[graspAndMiddlePointsWorldFrame->size()-1][2]));
+    // transformFrames.setRotation(qtfDef_);
+
+    // std::thread t1_(task2, nh, loop_rate, transformFrames, br);
+
 
     // endLinkX = rotneg90x*endLinkX;
     // endLinkY = rotneg90x*endLinkY;
@@ -490,16 +517,52 @@ void moveCloseObject(std::vector<Eigen::Vector3d> *graspAndMiddlePointsWorldFram
     // endLinkY = rotpos90x*endLinkY;
     // endLinkZ = rotpos90x*endLinkZ;
 
-    endLinkX = endLinkX;
-    endLinkY = endLinkZ;
-    endLinkZ = -endLinkY;
+    
 
-    // endLinkX = rotpos90y*endLinkX;
-    // endLinkY = rotpos90y*endLinkY;
-    // endLinkZ = rotpos90y*endLinkZ;
     // endLinkX = rotneg45z*endLinkX;
     // endLinkY = rotneg45z*endLinkY;
     // endLinkZ = rotneg45z*endLinkZ;
+    // endLinkX = matAux*endLinkX;
+    // endLinkY = matAux*endLinkY;
+    // endLinkZ = matAux*endLinkZ;
+    // endLinkX = matAux*rotpos90y*endLinkX;
+    // endLinkY = matAux*rotpos90y*endLinkY;
+    // endLinkZ = matAux*rotpos90y*endLinkZ;
+    // endLinkX = rotpos90x*endLinkX;
+    // endLinkY = rotpos90x*endLinkY;
+    // endLinkZ = rotpos90x*endLinkZ;
+    auto new_rot = matAux.transpose()*rotpos90x*rotneg45z*matAux;
+    endLinkX = new_rot*endLinkX;
+    endLinkY = new_rot*endLinkY;
+    endLinkZ = new_rot*endLinkZ;
+
+
+    // matAux << endLinkX[0], endLinkY[0], endLinkZ[0], endLinkX[1], endLinkY[1], endLinkZ[1], endLinkX[2], endLinkY[2], endLinkZ[2];
+
+    // Eigen::Quaterniond qtfAux_(matAux);
+    // tf::Quaternion qtfDef_(qtfAux_.x(), qtfAux_.y(), qtfAux_.z(), qtfAux_.w()); 
+    
+    // transformFrames.setOrigin(tf::Vector3((*graspAndMiddlePointsWorldFrame)[graspAndMiddlePointsWorldFrame->size()-1][0], (*graspAndMiddlePointsWorldFrame)[graspAndMiddlePointsWorldFrame->size()-1][1], (*graspAndMiddlePointsWorldFrame)[graspAndMiddlePointsWorldFrame->size()-1][2]));
+    // transformFrames.setRotation(qtfDef_);
+
+    // std::thread t1_(task2, nh, loop_rate, transformFrames, br);
+
+
+
+
+    // auto next_rot = matAux.transpose()*rotneg45x*matAux;
+
+    // endLinkX = next_rot*endLinkX;
+    // endLinkY = next_rot*endLinkY;
+    // endLinkZ = next_rot*endLinkZ;
+
+    // endLinkX = rotpos45x*endLinkX;
+    // endLinkY = rotpos45x*endLinkY;
+    // endLinkZ = rotpos45x*endLinkZ;
+
+    // endLinkX = rotneg45x*endLinkX;
+    // endLinkY = rotneg45x*endLinkY;
+    // endLinkZ = rotneg45x*endLinkZ;
     
 
     // endLinkX = rotpos180z*endLinkX;
@@ -507,8 +570,6 @@ void moveCloseObject(std::vector<Eigen::Vector3d> *graspAndMiddlePointsWorldFram
     // endLinkZ = rotpos180z*endLinkZ;
     
     matAux << endLinkX[0], endLinkY[0], endLinkZ[0], endLinkX[1], endLinkY[1], endLinkZ[1], endLinkX[2], endLinkY[2], endLinkZ[2];
-
-
 
     Eigen::Quaterniond qtfAux(matAux);
     tf::Quaternion qtfDef(qtfAux.x(), qtfAux.y(), qtfAux.z(), qtfAux.w()); 
@@ -545,34 +606,9 @@ void moveCloseObject(std::vector<Eigen::Vector3d> *graspAndMiddlePointsWorldFram
     Eigen::Vector3d graspingPose = transformPoint(pointGrasp, "objectAxis", "base_link");
     Eigen::Vector3d preGraspingPose = transformPoint(pointPreGrasp, "objectAxis", "base_link");
 
-    graspingPose[2] += 0.145; // 0.08
-    preGraspingPose[2] += 0.2; // 0.35
+    graspingPose[2] += 0.15; // 0.08 --> TODOOOO: BAJAR MAS EL ROBOT
+    preGraspingPose[2] += 0.2; // 0.35 
 
-
-    // Eigen::Vector3d point_0 = transformPoint((*graspAndMiddlePointsWorldFrame)[0], "objectAxis", "base_link");
-    // Eigen::Vector3d point_1 = transformPoint((*graspAndMiddlePointsWorldFrame)[1], "objectAxis", "base_link");
-    // Eigen::Vector3d point_2 = transformPoint((*graspAndMiddlePointsWorldFrame)[2], "objectAxis", "base_link");
-
-    // graspAndMiddlePointsWorldFrame[0][0] = point_0[0];
-    // graspAndMiddlePointsWorldFrame[0][1] = point_0[1];
-    // graspAndMiddlePointsWorldFrame[0][2] = point_0[2];
-
-    // graspAndMiddlePointsWorldFrame[1][0] = point_1[0];
-    // graspAndMiddlePointsWorldFrame[1][1] = point_1[1];
-    // graspAndMiddlePointsWorldFrame[1][2] = point_1[2];
-
-    // graspAndMiddlePointsWorldFrame[2][0] = point_2[0];
-    // graspAndMiddlePointsWorldFrame[2][1] = point_2[1];
-    // graspAndMiddlePointsWorldFrame[2][2] = point_2[2];
-
-
-    // Sustituir esto por lo de arriba?
-    // for(int j = 0; j < 3; j++)
-    // {
-    //   (*graspAndMiddlePointsWorldFrame)[0][j] = point_0[j];
-    //   (*graspAndMiddlePointsWorldFrame)[1][j] = point_1[j];
-    //   (*graspAndMiddlePointsWorldFrame)[2][j] = point_2[j];
-    // }
     
 
     move_group_interface_arm->setPoseReferenceFrame("base_link");
@@ -692,8 +728,8 @@ void moveCloseObject(std::vector<Eigen::Vector3d> *graspAndMiddlePointsWorldFram
     }
     
     // Move to that poses we said before
-    (*move_group_interface_arm).setPlanningTime(5.0);
-    (*move_group_interface_arm).setGoalTolerance(0.005);
+    (*move_group_interface_arm).setPlanningTime(10.0);
+    (*move_group_interface_arm).setGoalTolerance(0.015);
     (*move_group_interface_arm).setStartStateToCurrentState ();
     std::cout << "MOVE TO 'PRE_GRASP' POSITION" << std::endl;
 
@@ -830,35 +866,38 @@ void closeGripper(ros::NodeHandle nh, moveit::planning_interface::MoveGroupInter
   endLinkY << mat[1][0], mat[1][1], mat[1][2];//vectorY[0], vectorY[1], vectorY[2];
   endLinkZ << mat[2][0], mat[2][1], mat[2][2];//vectorX[0], vectorX[1], vectorX[2];
 
-  Eigen::Matrix3d rotpos180z, rotpos90y;
   Eigen::Matrix3d matAux;
+  matAux << endLinkY[0], endLinkX[0], endLinkZ[0], endLinkY[1], endLinkX[1], endLinkZ[1], endLinkY[2], endLinkX[2], endLinkZ[2];
+
+  Eigen::Matrix3d rotpos180z, rotpos90y;
+  
   rotpos90y << cos(90*M_PI/180), 0, sin(90*M_PI/180), 0, 1, 0, -sin(90*M_PI/180), 0, cos(90*M_PI/180);
 
-    
-  endLinkX = rotpos90y*endLinkX;
-  endLinkY = rotpos90y*endLinkY;
-  endLinkZ = rotpos90y*endLinkZ;
+  auto new_mat = matAux.transpose()*rotpos90y*matAux;
+  endLinkX = new_mat*endLinkX;
+  endLinkY = new_mat*endLinkY;
+  endLinkZ = new_mat*endLinkZ;
 
   matAux << endLinkY[0], endLinkX[0], -endLinkZ[0], endLinkY[1], endLinkX[1], -endLinkZ[1], endLinkY[2], endLinkX[2], -endLinkZ[2];
 
   Eigen::Quaterniond qtfAux(matAux);
 
-  // tf::Transform trans;
-  // tf::TransformBroadcaster br;
+  tf::Transform trans;
+  tf::TransformBroadcaster br;
 
-  // trans.setOrigin(tf::Vector3(graspAndMiddlePointsWorldFrame[1][0], graspAndMiddlePointsWorldFrame[1][1], graspAndMiddlePointsWorldFrame[1][2]));
-  // trans.setRotation(tf::Quaternion(qtfAux.x(), qtfAux.y(), qtfAux.z(), qtfAux.w()));
+  trans.setOrigin(tf::Vector3(graspAndMiddlePointsWorldFrame[1][0], graspAndMiddlePointsWorldFrame[1][1], graspAndMiddlePointsWorldFrame[1][2]));
+  trans.setRotation(tf::Quaternion(qtfAux.x(), qtfAux.y(), qtfAux.z(), qtfAux.w()));
 
-  // ros::Rate loop_rate(10);
+  ros::Rate loop_rate(10);
 
-  // while(nh.ok()){
-  //   br.sendTransform(tf::StampedTransform(trans, ros::Time::now(), "base_link", "objectAxis_")); 
-  //   /*br.sendTransform(tf::StampedTransform(transformFrames[1], ros::Time::now(), "world", "robotiq_finger_2_halfLink"));
-  //   br.sendTransform(tf::StampedTransform(transformFrames[2], ros::Time::now(), "world", "robotiq_finger_middle_halfLink")); */
+  while(nh.ok()){
+    br.sendTransform(tf::StampedTransform(trans, ros::Time::now(), "base_link", "objectAxis_")); 
+    /*br.sendTransform(tf::StampedTransform(transformFrames[1], ros::Time::now(), "world", "robotiq_finger_2_halfLink"));
+    br.sendTransform(tf::StampedTransform(transformFrames[2], ros::Time::now(), "world", "robotiq_finger_middle_halfLink")); */
     
-  //   ros::spinOnce();   
-  //   loop_rate.sleep(); 
-  // }
+    ros::spinOnce();   
+    loop_rate.sleep(); 
+  }
   
 
   point_finger_1.position.x = graspAndMiddlePointsWorldFrame[1][0];
