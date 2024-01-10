@@ -141,13 +141,15 @@ void processPC(ros::NodeHandle nh, std::string saveFilesPath, int gripTipSize, i
 
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr object (new pcl::PointCloud<pcl::PointXYZRGB>());
-  pcl::io::loadPCDFile<pcl::PointXYZRGB> ("/daniel/Desktop/evo_pipe/catkin_ws/PCD/master_chef_can_original.pcd", *object);
-  //pcl::io::loadPCDFile<pcl::PointXYZ> ("/daniel/Desktop/evo_pipe/catkin_ws/PCD/cracker_box_original.pcd", *cloud);
+  pcl::io::loadPCDFile<pcl::PointXYZRGB> ("/daniel/Desktop/evo_pipe/catkin_ws/PCD/sugar_box_original.pcd", *object);
+  // pcl::io::loadPCDFile<pcl::PointXYZ> ("/daniel/Desktop/evo_pipe/catkin_ws/PCD/cracker_box_original.pcd", *cloud);
 
 
   // Remove NaN values and make it dense
   std::vector<int> nanIndices;
   pcl::removeNaNFromPointCloud(*cloud, *cloud, nanIndices);
+
+  
 
   // Remove background points
   pcl::PassThrough<pcl::PointXYZ> ptFilter;
@@ -183,7 +185,7 @@ void processPC(ros::NodeHandle nh, std::string saveFilesPath, int gripTipSize, i
 
   sacSegmentator.setModelType(pcl::SACMODEL_PLANE);
   sacSegmentator.setMethodType(pcl::SAC_RANSAC);
-  sacSegmentator.setMaxIterations(50);
+  sacSegmentator.setMaxIterations(100);
   sacSegmentator.setDistanceThreshold(0.02);
   sacSegmentator.setInputCloud(cloud);
   sacSegmentator.segment(*inliers, *coefficients);
@@ -207,14 +209,18 @@ void processPC(ros::NodeHandle nh, std::string saveFilesPath, int gripTipSize, i
 
   std::vector<pcl::PointIndices> clusterIndices;
   pcl::EuclideanClusterExtraction<pcl::PointXYZ> ecExtractor;
-  ecExtractor.setClusterTolerance(0.01);
+  ecExtractor.setClusterTolerance(0.04);
   ecExtractor.setMinClusterSize(750);
   ecExtractor.setSearchMethod(tree);
   ecExtractor.setInputCloud(cloud);
   ecExtractor.extract(clusterIndices);
   
-  // pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> rgb(cloud, 255, 0, 0);
+  pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> rgb(cloud, 255, 255, 255);
+  pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> rgb_red(cloud, 255, 0, 0);
+  
+  
   // viewer->addPointCloud<pcl::PointXYZ>(cloud, rgb, "Main cloud");
+  // viewer->addPointCloud<pcl::PointXYZ>(cloudPlane, rgb_red, "Plane cloud");
 
   // while (!viewer->wasStopped ()){
   //   viewer->spinOnce (100);
@@ -222,6 +228,7 @@ void processPC(ros::NodeHandle nh, std::string saveFilesPath, int gripTipSize, i
   
   // viewer->removeAllPointClouds();
   // viewer->removeAllShapes();
+
 
   if(perform_ransac)
   {
@@ -231,11 +238,12 @@ void processPC(ros::NodeHandle nh, std::string saveFilesPath, int gripTipSize, i
     //pcl::copyPointCloud(object_test,my_cloud);
     pcl::copyPointCloud(*cloud,*scene);
 
-    pcl::visualization::PCLVisualizer viewer_("3D Viewer");
-    viewer_.setBackgroundColor(255, 255, 255);
-    viewer_.addPointCloud(object, "scene_cloud");
-    viewer_.addPointCloud(scene, "transformed_object");
-    viewer_.spin();
+
+    // pcl::visualization::PCLVisualizer viewer_("3D Viewer");
+    // viewer_.setBackgroundColor(255, 255, 255);
+    // viewer_.addPointCloud(object, "scene_cloud");
+    // viewer_.addPointCloud(scene, "transformed_object");
+    // viewer_.spin();
 
     
 
@@ -353,11 +361,11 @@ void processPC(ros::NodeHandle nh, std::string saveFilesPath, int gripTipSize, i
     pcl::transformPointCloud(*object_voxel, *object_aligned, transformation_matrix);
     pcl::transformPointCloud(*object, *object, transformation_matrix);
 
-    pcl::visualization::PCLVisualizer viewer_aux_2("3D Viewer");
-    viewer_aux_2.setBackgroundColor(255, 255, 255);
-    viewer_aux_2.addPointCloud(scene_voxel, "scene_cloud");
-    viewer_aux_2.addPointCloud(object_aligned, "transformed_object");
-    viewer_aux_2.spin();
+    // pcl::visualization::PCLVisualizer viewer_aux_2("3D Viewer");
+    // viewer_aux_2.setBackgroundColor(255, 255, 255);
+    // viewer_aux_2.addPointCloud(scene_voxel, "scene_cloud");
+    // viewer_aux_2.addPointCloud(object_aligned, "transformed_object");
+    // viewer_aux_2.spin();
 
     // ICP
     std::cout<<"Applying ICP ...\n";
@@ -399,7 +407,7 @@ void processPC(ros::NodeHandle nh, std::string saveFilesPath, int gripTipSize, i
 
     std::cout << "\n\n\nFitness: " << icp.getFitnessScore() << std::endl <<std::endl<<std::endl;
 
-    pcl::visualization::PCLVisualizer viewer_aux("3D Viewer");
+    pcl::visualization::PCLVisualizer viewer_aux("RANSAC");
     viewer_aux.setBackgroundColor(255, 255, 255);
     viewer_aux.addPointCloud(scene, "scene_cloud");
     viewer_aux.addPointCloud(object, "transformed_object");
@@ -428,7 +436,7 @@ void processPC(ros::NodeHandle nh, std::string saveFilesPath, int gripTipSize, i
     GraspEvoPose bestPose;   
     float ranking;
 
-    // Every cluster found is considered an object
+    // Every cluster found is considered a
     // Ideado para trabajar con 1 objeto unicamente. CUIDADO
     for (it = clusterIndices.begin(); it != clusterIndices.end(); ++it) {
       pcl::PointCloud<pcl::PointXYZ>::Ptr objectCloud(new pcl::PointCloud<pcl::PointXYZ>());
@@ -447,10 +455,12 @@ void processPC(ros::NodeHandle nh, std::string saveFilesPath, int gripTipSize, i
         pcl::copyPointCloud(*cloudPlane, *cloudPlaneXYZ);
         pcl::copyPointCloud(*objectCloud, *objectCloudXYZ);
 
-        // pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> rgb(cloud, 255, 0, 0);
-        // pcl::visualization::PCLVisualizer::Ptr viewer1(new pcl::visualization::PCLVisualizer("Viewer")); 
+        // pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> rgb(cloud,  255,255,255);
+        // pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> rgb_Red(cloud,  255,0,0);
+        // pcl::visualization::PCLVisualizer::Ptr viewer1(new pcl::visualization::PCLVisualizer("Viewer FINAL")); 
+        // viewer1->setBackgroundColor (0, 0, 0);
         // viewer1->addPointCloud<pcl::PointXYZ>(cloud_, rgb,"Object");
-        // viewer1->addPointCloud<pcl::PointXYZ>(cloudPlane, rgb,"Points");
+        // viewer1->addPointCloud<pcl::PointXYZ>(cloudPlaneXYZ, rgb_Red,"Points");
         
         // while (!viewer1->wasStopped())
         //   viewer1->spinOnce(100);
@@ -477,7 +487,7 @@ void processPC(ros::NodeHandle nh, std::string saveFilesPath, int gripTipSize, i
         // Guardar la nube del objeto
         std::cout<<"\n\nGUARDANDO LA NUBE\n\n";
         pcl::io::savePCDFileASCII (saveFilesPath+std::to_string(actualObject)+"_object.pcd", *cloud_);
-        pcl::io::savePCDFileASCII (saveFilesPath+std::to_string(actualObject)+"_plane.pcd", *cloudPlaneXYZ);
+        pcl::io::savePCDFileASCII (saveFilesPath+std::to_string(actualObject)+"_plane.pcd", *cloudPlane);
         // ###################################################################################
 
 
