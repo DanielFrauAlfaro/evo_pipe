@@ -1,6 +1,10 @@
 Lanzar la docker:
 	sudo docker run --shm-size=1g --ulimit memlock=-1 --ulimit stack=67108864 --rm -it --name docker_ignacio --net host --cpuset-cpus="0-7" -v ~/:/daniel -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw -v /dev:/dev --user=$(id -u $USER):$(id -g $USER) --privileged docker_ignacio
 
+
+	Con gpu (se le añade el "--gpus all" y "pid=host"):
+		sudo docker run --shm-size=1g --ulimit memlock=-1 --ulimit stack=67108864 --rm -it --name docker_ignacio --net host --cpuset-cpus="0-7" -v ~/:/daniel -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw -v /dev:/dev --user=$(id -u $USER):$(id -g $USER) --gpus all --pid=host  --privileged docker_ignacio
+
 Abrir terminales paralelas dentro de la docker:
 	sudo docker container ls -> dara un container ID (ejemplo 2b094593e916)
 	sudo docker exec -it <CONTAINER_ID> bash -> ejemplo(sudo docker exec -it 2b094593e916 bash)
