@@ -513,7 +513,7 @@ void moveCloseObject(std::vector<Eigen::Vector3d> graspAndMiddlePointsWorldFrame
     tf::Stamped<tf::Point> pointGrasp, pointPreGrasp, aux;
     pointGrasp.setX(-0.0); //-0.22
     pointGrasp.setY(0);
-    pointGrasp.setZ(-0.235);
+    pointGrasp.setZ(-0.245); //-0.235
     pointGrasp.frame_id_ = "objectAxis";
     
     pointPreGrasp.setX(-0.0);
