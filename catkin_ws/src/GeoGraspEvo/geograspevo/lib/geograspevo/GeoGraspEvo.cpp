@@ -4,6 +4,9 @@
 const float GeoGraspEvo::kGraspPlaneApprox = 0.007;
 const float GeoGraspEvo::kCloudNormalRadius = 0.03;
 
+const float GeoGraspEvo::kEpsilon = 1e-3;
+const float GeoGraspEvo::kVoxelFactor = 1000.0;
+
 GeoGraspEvo::GeoGraspEvo() :
     backgroundCloud(new pcl::PointCloud<pcl::PointXYZ>),
     objectCloud(new pcl::PointCloud<pcl::PointXYZ>),
@@ -198,14 +201,16 @@ pcl::ModelCoefficients GeoGraspEvo::getBackgroundPlaneCoeff() const {
 
 void GeoGraspEvo::compute() {
   // Some ratios dependant of the gripper
-  this->voxelRadius = (this->gripTipSize / 1000.0)/2.0;
+  this->voxelRadius = (this->gripTipSize / this->kVoxelFactor)/2.0;
   this->graspRadius = 2.0 * this->gripTipSize / 1000.0;
 
   std::cout << "Grasp radius: " << this->graspRadius << "\n"
             << "Voxel radius: " << this->voxelRadius << "\n";
+  std::cout<< "Epsilon: "<<this->kEpsilon<< "\n";
 
   std::cout << "Loaded " << this->objectCloud->width * this->objectCloud->height 
             << " data points from object cloud\n";
+
 
   // Background plane
   if (backgroundPlaneCoeff->values.size() == 0)
@@ -220,15 +225,24 @@ void GeoGraspEvo::compute() {
   filterOutliersFromCloud(this->objectCloud, meanNeighbours, outliersThreshold,
     originalCloud);
 
+
+  
+  originalCloud = this-> objectCloud;
+
+
+
   // Get points and their normals after applying voxel
   pcl::PointCloud<pcl::PointXYZ>::Ptr voxelCloud(new pcl::PointCloud<pcl::PointXYZ>);
   voxelizeCloud<pcl::PointCloud<pcl::PointXYZ>::Ptr, 
                 pcl::VoxelGrid<pcl::PointXYZ> >(originalCloud, this->voxelRadius, voxelCloud);
                 
+							
   // Object normals
   // This could be optimised passing a voxelized cloud instead
   computeCloudNormals(voxelCloud, this->kCloudNormalRadius, this->objectNormalCloud);
-                
+            
+			/****ELIMINAR STD::COUT****/
+//std::cout<<"*** Cloud="<<cloud->points.size()<<" this->objectCloud="<<this->objectCloud->points.size()<<" originalCloud="<<originalCloud->points.size()<<" voxelCloud="<<voxelCloud->points.size()<<std::endl;			
   cloud = voxelCloud;
 
   // Aproximate the object's main axis and centroid
@@ -328,6 +342,12 @@ void GeoGraspEvo::compute() {
 
   this->chosenPointsNormalVoxel.push_back(candidatePointsVoxel1); 
   
+//  for(int i =0;i<this->chosenPointsNormalVoxel[0]->size();i++)
+//	  std::cout<<i<<(this->chosenPointsNormalVoxel[0]->points[i])<<std::endl;
+// for(int i =0;i<this->chosenPointsNormalVoxel[1]->size();i++)
+//	  std::cout<<"**"<<i<<(this->chosenPointsNormalVoxel[1]->points[i])<<std::endl;
+//  std::cout<<" Después ("<<this->chosenPointsNormalVoxel[0]->size()<<","<<this->chosenPointsNormalVoxel[1]->size()<<")"<<std::endl;
+//  std::cout<<" Después Aux ("<<chosenPointsNormalVoxelAux[0]->size()<<","<<chosenPointsNormalVoxelAux[1]->size()<<")"<<std::endl;
 #ifdef _DEBUG  
   std::cout<<" Después ("<<this->chosenPointsNormalVoxel[0]->size()<<","<<this->chosenPointsNormalVoxel[1]->size()<<")"<<std::endl;
 #endif  
@@ -350,6 +370,7 @@ void GeoGraspEvo::compute() {
   aux = this->chosenPointsNormalVoxel[0];
   this->chosenPointsNormalVoxel[0] = this->chosenPointsNormalVoxel[1];
   this->chosenPointsNormalVoxel[1] = aux;
+
   
   getBestGraspingPoints(cloud, this->graspPlaneCoeff, this->objectCentroidPoint, this->numberBestGrasps, 
                         this->bestGraspingPoints, this->rankings, chooseX, topView);
@@ -476,7 +497,7 @@ void GeoGraspEvo::findInitialPointsInSideView(bool *chooseX) {
                                    this->backgroundPlaneCoeff->values[2]);
   Eigen::Vector3f worldZVector(0, 0, 1);
   
-  /*pcl::PointXYZ a(1,0,0);
+  pcl::PointXYZ a(1,0,0);
   pcl::PointXYZ b(0,1,0);
   pcl::PointXYZ c(0,0,1);
   pcl::PointXYZ d(0,0,0);
@@ -490,7 +511,7 @@ void GeoGraspEvo::findInitialPointsInSideView(bool *chooseX) {
   viewer->addSphere(b, 0.01, 0, 255, 0, "backgroundPlaneCoeff");
   
   while (!viewer->wasStopped())
-    viewer->spinOnce(100);*/
+    viewer->spinOnce(100);
 
   float objGraspNormalAngleCos = std::abs((objAxisVector.dot(backNormalVector)) / 
     (objAxisVector.norm() * backNormalVector.norm()));
@@ -782,8 +803,28 @@ void GeoGraspEvo::getClosestPointsByRadius(const pcl::PointNormal & point,
   
   for( int j = 0; j < preChosenPoints->size(); j++){
       
-    chosenPointsSphere->push_back(preChosenPoints->points[j]);
-    chosenPointsSphereNormal->push_back(preChosenPointsNormal->points[j]);
+	  ///////////////////////////////////////////////////
+	  // Add code for removing perpendicular normals.
+	  ///////////////////////////////////////////////////
+	 float angle_value = 
+	  (preChosenPointsNormal->points[j].normal_x*point.normal_x+
+						   preChosenPointsNormal->points[j].normal_y*point.normal_y+
+						   preChosenPointsNormal->points[j].normal_z*point.normal_z)
+						   /
+	  (sqrt(preChosenPointsNormal->points[j].normal_x*preChosenPointsNormal->points[j].normal_x+
+						 preChosenPointsNormal->points[j].normal_y*preChosenPointsNormal->points[j].normal_y+
+						 preChosenPointsNormal->points[j].normal_z*preChosenPointsNormal->points[j].normal_z)*
+						 sqrt(point.normal_x*point.normal_x+
+						  point.normal_y*point.normal_y+
+						  point.normal_z*point.normal_z))
+						  ;
+						   
+	  if(angle_value>0.707106781f) {  
+	  ///////////////////////////////////////////////////
+	  ///////////////////////////////////////////////////	  
+			chosenPointsSphere->push_back(preChosenPoints->points[j]);
+			chosenPointsSphereNormal->push_back(preChosenPointsNormal->points[j]);
+	  }
   }
   
   chosenPoints = chosenPointsSphere;
@@ -911,7 +952,6 @@ void GeoGraspEvo::getPoint(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 
 
     
-
   float mod = sqrtf(vectorPPVector[0]*vectorPPVector[0]+vectorPPVector[1]*vectorPPVector[1]+vectorPPVector[2]*vectorPPVector[2]);
   Eigen::Vector3f vectorPPVectorNorm(vectorPPVector[0]/mod, vectorPPVector[1]/mod, vectorPPVector[2]/mod);
   
@@ -920,24 +960,23 @@ void GeoGraspEvo::getPoint(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
   std::vector<float> pointsSquaredDistance;
 
   treeSearch->setInputCloud(cloud);
-  
-  pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloud(new pcl::PointCloud<pcl::PointXYZ>);
+//  pcl::PointCloud<pcl::PointXYZ>::Ptr pointCloud(new pcl::PointCloud<pcl::PointXYZ>);
   pcl::PointCloud<pcl::PointXYZ>::Ptr preChosenPoints(new pcl::PointCloud<pcl::PointXYZ>);
   pcl::PointCloud<pcl::PointNormal>::Ptr preChosenPointsNormal(new pcl::PointCloud<pcl::PointNormal>);
   pcl::PointCloud<pcl::PointXYZ>::Ptr chosenPointsSphere(new pcl::PointCloud<pcl::PointXYZ>);
   pcl::PointCloud<pcl::PointNormal>::Ptr chosenPointsSphereNormal(new pcl::PointCloud<pcl::PointNormal>);
     
 ////std::cout<<"Vector ("<<vectorPPVectorNorm[0]<<","<<vectorPPVectorNorm[1]<<","<<vectorPPVectorNorm[2]<<")"<<std::endl;	
-	
-  for (float i=minRadius; i<maxRadius; i+=stepRadius){
-  
-    pcl::PointXYZ point (vectorPPPoint[0], vectorPPPoint[1], vectorPPPoint[2]);
-    
-    point.x = point.x + vectorPPVectorNorm[0]*i;
-    point.y = point.y + vectorPPVectorNorm[1]*i;
-    point.z = point.z + vectorPPVectorNorm[2]*i;
+//  std::cout<<"Radius=("<<minRadius<<","<<maxRadius<<"), stepRadius="<<stepRadius<<std::endl;
+  pcl::PointXYZ pointAux (vectorPPPoint[0], vectorPPPoint[1], vectorPPPoint[2]);
+//  float this->kEpsilon = 1e-4f;
+  for (float i=minRadius; i<maxRadius+this->kEpsilon; i+=stepRadius){
+   
+    pointAux.x = pointAux.x + vectorPPVectorNorm[0]*i;
+    pointAux.y = pointAux.y + vectorPPVectorNorm[1]*i;
+    pointAux.z = pointAux.z + vectorPPVectorNorm[2]*i;
         
-    treeSearch->radiusSearch(point, searchLineRadius, pointsIndex->indices, pointsSquaredDistance);
+    treeSearch->radiusSearch(pointAux, searchLineRadius, pointsIndex->indices, pointsSquaredDistance);
     
     extractInliersCloud<pcl::PointCloud<pcl::PointXYZ>::Ptr,
                         pcl::ExtractIndices<pcl::PointXYZ> >(cloud, pointsIndex, preChosenPoints);
@@ -946,16 +985,15 @@ void GeoGraspEvo::getPoint(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
                         pcl::ExtractIndices<pcl::PointNormal> >(objectNormalCloud, pointsIndex, preChosenPointsNormal);                    
                       
     for( int j = 0; j < preChosenPoints->size(); j++){
-      
         chosenPointsSphere->push_back(preChosenPoints->points[j]);
         chosenPointsSphereNormal->push_back(preChosenPointsNormal->points[j]);
-    }                           
-    
-    pointCloud->push_back(point);
+    }                               
+//    pointCloud->push_back(point);
   }   
-  
-  this->pointClouds.push_back(pointCloud);  
-  
+   chosenPointsSphere->push_back(pointAux);
+   chosenPointsSphereNormal->push_back(point);
+//  this->pointClouds.push_back(pointCloud);  
+//  std::cout<<"Puntos elegidos="<<chosenPointsSphere->size()<<std::endl;
   chosenPoints = chosenPointsSphere;
   chosenPointsNormal = chosenPointsSphereNormal;
 }
@@ -1014,15 +1052,22 @@ void GeoGraspEvo::getBestGraspingPoints(pcl::PointCloud<pcl::PointXYZ>::Ptr clou
   
   // Inicializacion del vector que contiene posibles puntos para cada dedo para cada punto del voxel
   candidates.clear();
+  candidatesNormal.clear();
   candidates.resize(this->numFingers-1);
   candidatesNormal.resize(this->numFingers-1);
   
   for (int i=0; i<this->numFingers-1; i++){
-    candidates[i].resize(this->chosenPointsNormalVoxel[1]->size());
-    candidatesNormal[i].resize(this->chosenPointsNormalVoxel[1]->size());
+//std::cout<<"Voxel["<<i<<"]="<<this->chosenPointsNormalVoxel[i]->size()<<std::endl;
+//std::cout<<"Candidates ["<<i<<"]="<<candidates[i].size()<<", "<<candidatesNormal[i].size()<<std::endl;
+    candidates[i].resize(this->chosenPointsNormalVoxel[i]->size());
+    candidatesNormal[i].resize(this->chosenPointsNormalVoxel[i]->size());
+//std::cout<<"Candidates after ["<<i<<"]="<<candidates[i].size()<<", "<<candidatesNormal[i].size()<<std::endl;
   }
-                                 
+//std::cout<<"Seguimos"<<std::endl;                                 
   //for (int i=0; i<2; i++){
+	  this->candidates = candidates;
+	  this->candidatesNormal=candidatesNormal;
+//std::cout<<"Asignamos a this"<<std::endl;                                 
   
   // Get from initial graspPoint 1 or 2 their normalization parameters
   float centroidDistanceMin, centroidDistanceMax;
@@ -1035,26 +1080,44 @@ void GeoGraspEvo::getBestGraspingPoints(pcl::PointCloud<pcl::PointXYZ>::Ptr clou
   centroidDistanceMax = graspPlaneDistanceMax = curvatureMax; 
   
   getPointInfoNormalization(*this->chosenPointsNormalVoxel[0], centroidVector, graspHyperplane, &centroidDistanceMin, &centroidDistanceMax, &graspPlaneDistanceMin, &graspPlaneDistanceMax, &curvatureMin, &curvatureMax);
-                            
+    
+//std::cout<<"Antes GetPoint"<<std::endl;	
+//std::cout<<chosenPointsNormalVoxel[1]->size()<<std::endl;
+
+
+//   for (int k=0; k<chosenPointsNormalVoxel[1]->size(); k++)
+//		std::cout<<"++++"<<k<<chosenPointsNormalVoxel[1]->points[k]<<std::endl;
+		
+//std::cout<<"XXXXXXXX"<<this->candidates[0].size()<<","<<this->candidatesNormal[0].size()<<std::endl;
   //std::cout<<chosenPointsNormalVoxel[0]->points[0]<<std::endl;
-                            
   // For each candidate in voxel, we need possible points 3 and 4
   for (int j=0; j<this->apertures.size(); j++){
-    for (int k=0; k<chosenPointsNormalVoxel[1]->size(); k++){
-
+    for (int k=0; k<chosenPointsNormalVoxel[j]->size(); k++){
+//std::cout<<"[j,k]=["<<j<<","<<k<<"]="<<std::endl;
+/*		if(!(this->candidatesNormal[j][k])) {
+			this->candidatesNormal[j].resize(k); 
+			this->candidates[j].resize(k); 
+			break; 
+		}*/
+//std::cout<<chosenPointsNormalVoxel[j]->points[k]<<std::endl;
+//std::cout<<this->candidates[j][k]<<std::endl;
+//std::cout<<this->candidatesNormal[j][k]<<std::endl;
+//
       getPoint(cloud, chosenPointsNormalVoxel[1]->points[k], this->candidates[j][k], this->candidatesNormal[j][k], chooseX, topView, j);
     }
   }
-  
+  std::cout<<"Despues GetPoint"<<std::endl;
   //candidatePointsDraw(cloud);
-      
+//      std::cout<<"Después GetPoint"<<std::endl;	
 //  const float voxelRadius = (this->gripTipSize / 2000.0)/2;
 //  std::cout<<"VoxelRadius value="<<this->voxelRadius<<std::endl;
   pcl::PointCloud<pcl::PointNormal>::Ptr GraspPlaneCloud1(new pcl::PointCloud<pcl::PointNormal>);
   pcl::PointCloud<pcl::PointXYZ>::Ptr GraspPlaneCloud(new pcl::PointCloud<pcl::PointXYZ>);
   
+ // std::cout<<"Cadi="<<this->candidates[0].size()<<std::endl;
+  
   for (int j=0; j<this->apertures.size(); j++){
-    for (int k=0; k<chosenPointsNormalVoxel[1]->size(); k++){
+    for (int k=0; k<chosenPointsNormalVoxel[j]->size(); k++){
       
       voxelizeCloud<pcl::PointCloud<pcl::PointXYZ>::Ptr, 
                     pcl::VoxelGrid<pcl::PointXYZ> >( this->candidates[j][k], this->voxelRadius, this->candidates[j][k]);
@@ -1062,22 +1125,34 @@ void GeoGraspEvo::getBestGraspingPoints(pcl::PointCloud<pcl::PointXYZ>::Ptr clou
                     pcl::VoxelGrid<pcl::PointNormal> >( this->candidatesNormal[j][k], this->voxelRadius, this->candidatesNormal[j][k]);
     }
   }
-  
+//  std::cout<<"Después voxelizar"<<std::endl;
+//  std::cout<<"Cadi="<<this->candidates[0].size()<<std::endl;
+
   //candidatePointsDraw(cloud);
   
   candidatesNormalVoxel.clear();
   candidatesNormalVoxel.resize(this->numFingers-1);
-  
+  std::cout<<"NormalVoxels"<<std::endl;
   for(int j=0; j<this->apertures.size();j++){
+//	std::cout<<"j="<<j<<std::endl;
     pcl::PointCloud<pcl::PointNormal>::Ptr tempCloud(new pcl::PointCloud<pcl::PointNormal>);
+//	std::cout<<"k="<<this->candidatesNormal[j].size()<<std::endl;
     for (int k=0; k<this->candidatesNormal[j].size(); k++){
-      for (int l=0;l<this->candidatesNormal[j][k]->points.size(); l++){
-        tempCloud->push_back(this->candidatesNormal[j][k]->points[l]);
-      }
+//		std::cout<<"[j,k]=["<<j<<","<<k<<"]="<<this->candidatesNormal[j][k]<<std::endl;
+		if(!(this->candidatesNormal[j][k])) {
+			this->candidatesNormal[j].resize(k); 
+			this->candidates[j].resize(k); 
+			break; 
+		}
+//		std::cout<<this->candidatesNormal[j][k]->points.size()<<std::endl;	
+		for (int l=0;l<this->candidatesNormal[j][k]->points.size(); l++){
+			tempCloud->push_back(this->candidatesNormal[j][k]->points[l]);
+		}
     }
+//	std::cout<<"Vuelta "<<j<<std::endl;
     this->candidatesNormalVoxel[j] = tempCloud; 
   }
-
+//std::cout<<"DESPUES CANDIDATOS"<<std::endl;
 #ifdef _DEBUG
 	std::cout<<"Cloud = "<<cloud->size()<<" ";
 	std::cout<<"Puntos en dedos ("<<this->candidatesNormalVoxel[0]->size()<<","<<this->candidatesNormalVoxel[1]->size()<<")";
@@ -1208,7 +1283,7 @@ std::cout<<"GPDm: "<<graspPlaneDistanceMin<<" "<<graspPlaneDistanceMax<<std::end
   // Loop in search of the best points tuple
 
   float pointRank1 = 0.0, pointRank = 0.0, pointRank2 = 0.0, pointRank3 = 0.0;
-  float epsilon = 1e-8; // Needed to avoid division by zero
+//  float this->kEpsilon = 1e-4; // Needed to avoid division by zero
 
 #ifdef _DEBUG
 	int contarIteraciones=0;
@@ -1235,15 +1310,15 @@ std::cout<<"GPDm: "<<graspPlaneDistanceMin<<" "<<graspPlaneDistanceMax<<std::end
 
   std::cout<<"Distancia entre dedos: ";
   for(int aux=0;aux< this->apertures.size()-1;aux++) {
-		minDistance[aux] = (this->apertures[aux+1][0]-this->apertures[0][1]);//-epsilon;
-		maxDistance[aux] = (this->apertures[aux+1][1]-this->apertures[0][0]);//+epsilon;
+		minDistance[aux] = (this->apertures[aux+1][0]-this->apertures[0][1])-this->kEpsilon;
+		maxDistance[aux] = (this->apertures[aux+1][1]-this->apertures[0][0])+this->kEpsilon;
 
 		std::cout<<"("<<minDistance[aux]<<","<<maxDistance[aux]<<") ";
   }
   std::cout<<std::endl;
   	
-//  float minDistance = (this->apertures[0][0]-this->apertures[1][1]) / 1000.0-epsilon;
-//  float maxDistance = (this->apertures[0][1]-this->apertures[1][0]) / 1000.0+epsilon;  
+//  float minDistance = (this->apertures[0][0]-this->apertures[1][1]) / 1000.0-this->kEpsilon;
+//  float maxDistance = (this->apertures[0][1]-this->apertures[1][0]) / 1000.0+this->kEpsilon;  
 
 #ifdef _DEBUG
 	std::cout<<"Distancia entre dedos ("<<minDistance<<","<<maxDistance<<")"<<std::endl;
@@ -1257,6 +1332,8 @@ Eigen::Vector3f vini, searchVector;
 float minDistanceLine = std::numeric_limits<float>::max();
 float maxDistanceLine = -std::numeric_limits<float>::max();
 float dist;
+//std::cout<<"Distancias a líneas 0 ("<<minDistanceLine<<","<<maxDistanceLine<<")"<<std::endl;
+//std::cout<<"Dedos="<<this->numFingers<<" this->candidatesNormalVoxel[0]->size()="<<this->candidatesNormalVoxel[0]->size()<<" this->candidatesNormalVoxel[1]->size()="<<this->candidatesNormalVoxel[1]->size()<<std::endl;
 
 for(size_t k=0; k<this->candidatesNormalVoxel[0]->size();k++ ) {
 	pini = this->candidatesNormalVoxel[0]->points[k];
@@ -1270,7 +1347,8 @@ for(size_t k=0; k<this->candidatesNormalVoxel[0]->size();k++ ) {
 			searchVector = Eigen::Vector3f(searchPoint.x, searchPoint.y, searchPoint.z);
 
 			dist = (vini - searchVector).norm();
-			if(dist>=minDistance[f] && dist<=maxDistance[f]) {
+//std::cout<<"F="<<f<<"; dist="<<dist<<"; DistAlong="<<LineAlongFingers.distance(searchVector)<<"; min-max Distance ("<<minDistance[f-1]<<","<<maxDistance[f-1]<<")"<<std::endl;			
+			if(dist>=minDistance[f-1] && dist<=maxDistance[f-1]) {
 				dist = LineAlongFingers.distance(searchVector);
 				if(dist<minDistanceLine) minDistanceLine = dist;
 				if(dist>maxDistanceLine) maxDistanceLine = dist;
@@ -1279,7 +1357,7 @@ for(size_t k=0; k<this->candidatesNormalVoxel[0]->size();k++ ) {
 	}
 }
 
-std::cout<<"Distancias a líneas ("<<minDistanceLine<<","<<maxDistanceLine<<")"<<std::endl;
+std::cout<<"Distancias a líneas 1 ("<<minDistanceLine<<","<<maxDistanceLine<<")"<<std::endl;
 std::cout<<"Número de dedos: "<<numFingers<<std::endl;
 
 
@@ -1360,12 +1438,19 @@ fingerPosition.resize(this->numFingers-1);
 
 int conta=0;
 
+bool seguir = true;
+for(finger = 0;finger < this->numFingers-1;finger++) { 
+	fingerPosition[finger]=0;
+	if( this->candidatesNormalVoxel[finger]->points.size() <1 )
+		seguir = false;
+}
 
 for(finger = 0;finger < this->numFingers-1;finger++) fingerPosition[finger]=0;
 
-
+if(seguir)
   for (size_t i = 0; i < this->chosenPointsNormalVoxel[0]->points.size(); i++) {
-  
+ 
+//std::cout<<"SEGUIR ("<<i<<")->"<<this->chosenPointsNormalVoxel[0]->points.size()<<std::endl; 
     firstPoint = this->chosenPointsNormalVoxel[0]->points[i];
     firstVector = Eigen::Vector3f(firstPoint.x, firstPoint.y, firstPoint.z);
     firstNormalVector = Eigen::Vector3f (firstPoint.normal_x, firstPoint.normal_y, firstPoint.normal_z);
@@ -1374,10 +1459,10 @@ for(finger = 0;finger < this->numFingers-1;finger++) fingerPosition[finger]=0;
     firstPointCurvature = firstPoint.curvature;
 
     // Normalize
-    firstPointGraspPlaneDistance = (firstPointGraspPlaneDistance + epsilon - 
+    firstPointGraspPlaneDistance = (firstPointGraspPlaneDistance + this->kEpsilon - 
       graspPlaneDistanceMin) / (graspPlaneDistanceMax - 
       graspPlaneDistanceMin);
-    firstPointCurvature = (firstPointCurvature + epsilon - curvatureMin) /
+    firstPointCurvature = (firstPointCurvature + this->kEpsilon - curvatureMin) /
       (curvatureMax - curvatureMin);
 
 	endLoop = false;
@@ -1406,7 +1491,9 @@ std::cout<<")"<<std::endl;
 			fingerVector[f] = Eigen::Vector3f(fingerPoint[f].x, fingerPoint[f].y, fingerPoint[f].z);
 			fingerPointGraspPlaneDistance[f] = graspHyperplane.signedDistance(fingerVector[f]);
 			dist = fingerPointGraspPlaneDistance[f] - finger1Distance;
-			if(dist<this->apertures[f][0] || dist>this->apertures[f][1]) {
+//std::cout<<"("<<this->apertures[f][0]<<","<<this->apertures[f][1]<<")"<<std::endl;			
+//std::cout<<f<<": dist="<<dist<<",fingertoplane="<<fingerPointGraspPlaneDistance[f]<<", f1Dist="<<finger1Distance<<std::endl;
+			if(dist<(this->apertures[f][0]-this->kEpsilon) || dist>(this->apertures[f][1]+this->kEpsilon) ) {
 				valid = false;				
 				conta++;
 			} else {
@@ -1416,15 +1503,15 @@ std::cout<<")"<<std::endl;
 				//break;		
 				fingerNormalVector[f] = Eigen::Vector3f(fingerPoint[f].normal_x, fingerPoint[f].normal_y, fingerPoint[f].normal_z);
 				fingerPointCurvature[f] = fingerPoint[f].curvature;
-				fingerPointGraspPlaneDistance[f] = (fingerPointGraspPlaneDistance[f] + epsilon - graspPlaneDistanceMinVector[f]) / (graspPlaneDistanceMaxVector[f] - graspPlaneDistanceMinVector[f]);
-				fingerPointCurvature[f] = (fingerPointCurvature[f] + epsilon - curvatureMinVector[f]) / (curvatureMaxVector[f] - curvatureMinVector[f]);
+				fingerPointGraspPlaneDistance[f] = (fingerPointGraspPlaneDistance[f] + this->kEpsilon - graspPlaneDistanceMinVector[f]) / (graspPlaneDistanceMaxVector[f] - graspPlaneDistanceMinVector[f]);
+				fingerPointCurvature[f] = (fingerPointCurvature[f] + this->kEpsilon - curvatureMinVector[f]) / (curvatureMaxVector[f] - curvatureMinVector[f]);
 				
 				fingerPointMiddle = fingerPointMiddle + fingerVector[f];
 				fingerNormalMiddle = fingerNormalMiddle + fingerNormalVector[f];
 
 				sumDistances += fingerPointGraspPlaneDistance[f];
 				sumCurvatures += fingerPointCurvature[f];
-
+//std::cout<<"Válido"<<std::endl;
 				if(f==0) {				
 					Eigen::ParametrizedLine<float,3> l(fingerVector[f], graspNormalVector);
 					LineAlongFingers = l;
@@ -1436,12 +1523,14 @@ std::cout<<")"<<std::endl;
 			}
 		}
 		pointRank3 = 0;
-
 		for(f=0;valid && f< this->numFingers-2;f++) {
 			 dist = (fingerVector[0] - fingerVector[f+1]).norm();
+//std::cout<<"dist="<<dist<<std::endl;	
+//std::cout<<"0->"<<fingerVector[0]<<std::endl;		 
+//std::cout<<f+1<<"->"<<fingerVector[f+1]<<std::endl;
 			 if(dist<minDistance[f] || dist>maxDistance[f]) valid = false;
  			// Normalizo el valor entre 0 y 1.
- 			dist = epsilon + (dist-minDistance[f])/(maxDistance[f]-minDistance[f]);
+ 			dist = this->kEpsilon + (dist-minDistance[f])/(maxDistance[f]-minDistance[f]);
 
 			pointRank3 += dist;
 		}
@@ -1452,6 +1541,7 @@ std::cout<<")"<<std::endl;
 		
 		// Se sale de la distancia entre dedos de la pinza.
 		if( valid ) {
+//std::cout<<"Valid Rank3"<<std::endl;
 
 			pointRank3 /= this->numFingers-1;
 
@@ -1459,8 +1549,8 @@ std::cout<<")"<<std::endl;
 			fingerNormalMiddle = fingerNormalMiddle/fingerNormalMiddle.norm();
             
 			fingerLine1ToMiddleVector = Eigen::ParametrizedLine<float,3>::Through(firstVector, fingerPointMiddle).direction();
-			fingerAngleCos1ToMiddle = epsilon + (fingerLine1ToMiddleVector.dot(firstNormalVector)) / (fingerLine1ToMiddleVector.norm() * firstNormalVector.norm());
-			fingerAngleCos1ToMiddle2 = epsilon + (fingerLine1ToMiddleVector.dot(fingerNormalMiddle)) / (fingerLine1ToMiddleVector.norm() * fingerNormalMiddle.norm());
+			fingerAngleCos1ToMiddle = this->kEpsilon + (fingerLine1ToMiddleVector.dot(firstNormalVector)) / (fingerLine1ToMiddleVector.norm() * firstNormalVector.norm());
+			fingerAngleCos1ToMiddle2 = this->kEpsilon + (fingerLine1ToMiddleVector.dot(fingerNormalMiddle)) / (fingerLine1ToMiddleVector.norm() * fingerNormalMiddle.norm());
 
 
 			pointRank1 = 2.0 - std::abs(firstPointGraspPlaneDistance - sumDistances);
@@ -1485,9 +1575,15 @@ if(pointRank4>maxDis) maxDis = pointRank4;
 
             size_t rank = 0;
             std::vector<GraspEvoContacts>::iterator graspsIt;
-
+			bool add_point=false;
+			
             for (rank = 0, graspsIt = bestGrasps.begin(); rank < bestRanks.size(); ++rank, ++graspsIt) {
               if (pointRank > bestRanks[rank]) {
+				add_point=true;
+				break;
+			  }
+			}
+			if(add_point || (bestRanks.size() < numGrasps)) {
 				GraspEvoContacts newGrasp;
 				pcl::PointXYZ punto(firstPoint.x, firstPoint.y, firstPoint.z);
 				newGrasp.graspContactPoints.push_back(punto);
@@ -1503,8 +1599,6 @@ if(pointRank4>maxDis) maxDis = pointRank4;
 					bestRanks.pop_back();
 					bestGrasps.pop_back();
 				}
-				break;
-			  }
 			}
 		}
 

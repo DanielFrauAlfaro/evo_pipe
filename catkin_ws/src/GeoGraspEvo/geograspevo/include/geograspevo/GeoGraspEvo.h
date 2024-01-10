@@ -105,6 +105,10 @@ class GeoGraspEvo {
     static const float kGraspPlaneApprox;
     // Radius used to compute point cloud normals
     static const float kCloudNormalRadius;
+	// Meassure error for a valid points.
+	static const float kEpsilon;
+	// Scale factor of the voxelization procedure.
+	static const float kVoxelFactor;
 
     // Auxiliary functions
 
@@ -158,6 +162,7 @@ class GeoGraspEvo {
                        T outputCloud);
                        
     void candidatePointsDraw(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
+	void candidatePointsDraw(pcl::visualization::PCLVisualizer::Ptr & viewer2, pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
                        
     void getPoint(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, 
                  pcl::PointNormal point,
