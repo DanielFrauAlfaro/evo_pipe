@@ -79,3 +79,11 @@ Probar el ur:
 	(real - habilitar URCaps) En interfaz UR, ejecutar el programa "external_control.urp" y darle al play. OJO: la IP del ordenador host debe ser la del ordenador que lo controla
 	(real - cargar info brazo real) roslaunch ur5e_moveit_config moveit_planning_execution.launch 
 	(real - simular rviz pero brazo se mueve) roslaunch ur5e_moveit_config moveit_rviz.launch
+
+
+
+
+
+
+/moveitGrasp/visualization_marker
+/camera1/color/image_raw --> camara para hacer el video
