@@ -188,6 +188,7 @@ RUN pip3 install roboticstoolbox-python
 ENV NVIDIA_VISIBLE_DEVICES ${NVIDIA_VISIBLE_DEVICES:-all}
 ENV NVIDIA_DRIVER_CAPABILITIES all 
 
+
 # compute,utility,graphics
 
 # RUN pip3 install plotvol3
