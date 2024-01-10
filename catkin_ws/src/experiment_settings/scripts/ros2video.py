@@ -24,6 +24,7 @@ if __name__ == "__main__":
     while not rospy.is_shutdown():
         if cv_image is not None:
             # cv_image = cv2.resize(cv_image, (640, 480), interpolation = cv2.INTER_AREA)
-            cv2.imshow("Image window", cv_image)
-            out.write(cv_image)
+            image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
+            cv2.imshow("Image window", image)
+            out.write(image)
         cv2.waitKey(1)
